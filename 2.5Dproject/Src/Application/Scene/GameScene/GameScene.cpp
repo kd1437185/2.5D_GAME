@@ -9,6 +9,25 @@
 void GameScene::Event()
 {
 	//===================================================================
+	// デバッグ情報の表示
+	// 毎フレームクリアしてから最新情報を1行で表示する
+	// ログが横に伸びないように ClearLog() を毎フレーム呼ぶ
+	//===================================================================
+	KdDebugGUI::Instance().ClearLog();
+
+	if (m_wpPlayer.expired() == false)
+	{
+		Math::Vector3 playerPos = m_wpPlayer.lock()->GetPos();
+
+		KdDebugGUI::Instance().AddLog(
+			"PlayerPos X:%.2f Y:%.2f Z:%.2f",
+			playerPos.x,
+			playerPos.y,
+			playerPos.z
+		);
+	}
+
+	//===================================================================
 	// デバッグ用：エンターキーでタイトルシーンに遷移
 	//===================================================================
 	if (GetAsyncKeyState(VK_RETURN) & 0x8000)

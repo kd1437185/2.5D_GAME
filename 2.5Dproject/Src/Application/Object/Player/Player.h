@@ -36,6 +36,9 @@ public:
 	// m_pos を直接返すことで常に最新座標を取得できる
 	Math::Vector3 GetPos() const override { return m_pos; }
 
+	// 敵からダメージを受ける関数
+	void TakeDamage(int _damage);
+
 private:
 
 	void ChangeAnimation();

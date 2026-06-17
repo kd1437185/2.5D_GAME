@@ -17,7 +17,7 @@ void Player::Update()
 			m_isAttacking = true;
 
 			m_animeInfo.count = 0;
-			m_animeInfo.speed = 0.2f;
+			m_animeInfo.speed = 0.3f;
 
 			// 攻撃SE再生
 			KdAudioManager::Instance().Play("Asset/Sounds/Attack.WAV", false);
@@ -400,4 +400,15 @@ void Player::ChangeAnimation()
 {
 	m_animeInfo.count = 0;
 	m_animeInfo.speed = 0.2f;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ダメージを受ける関数
+// 将来的にHPを減らす処理を追加する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void Player::TakeDamage(int _damage)
+{
+	// 現時点では受けたことをログに表示するだけ
+	// 将来的にHPを減らす処理を追加する
+	KdDebugGUI::Instance().AddLog("Player TakeDamage:%d", _damage);
 }

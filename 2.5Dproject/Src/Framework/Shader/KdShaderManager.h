@@ -229,7 +229,7 @@ private:
 
 	KdAmbientController m_ambientController;
 
-	bool m_pixelArtStyle = true;
+	bool m_pixelArtStyle = false;
 
 	//==========================
 	//

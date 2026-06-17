@@ -16,7 +16,7 @@ public:
 	void Init()			override;
 	void Update()		override;
 	void PostUpdate()	override;
-	void DrawLit()		override;
+	void DrawBright()		override;
 
 	// 生成時に座標と向きを設定する
 	// ・_pos    … 生成座標

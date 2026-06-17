@@ -87,9 +87,18 @@ void AttackEffect::Update()
 		std::list<KdCollider::CollisionResult> results;
 		if (obj->Intersects(sphere, &results))
 		{
-			// 敵を即座に消滅させる
-			// 将来的にはここで enemy->TakeDamage(damage) を呼ぶ
-			enemy->SetExpired();
+			// ノックバック方向：敵の進行方向の逆
+			// enemy->m_dir の逆方向にノックバックさせる
+			// m_dir は private なので GetDir() を追加するか
+			// エフェクトからプレイヤー→敵の方向で計算する
+			Math::Vector3 knockBackDir = -(enemy->GetDir());
+			knockBackDir.Normalize();
+
+			// ノックバックの強さ
+			static constexpr float KnockBackPower = 0.3f;
+
+			// ダメージとノックバックを与える
+			enemy->TakeDamage(1, knockBackDir * KnockBackPower);
 		}
 	}
 }
@@ -106,7 +115,7 @@ void AttackEffect::PostUpdate()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 描画
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
-void AttackEffect::DrawLit()
+void AttackEffect::DrawBright()
 {
 	if (m_isFlip)
 	{
