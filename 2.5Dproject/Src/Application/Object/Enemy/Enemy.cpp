@@ -6,6 +6,20 @@
 void Enemy::Update()
 {
 	//===================================================================
+	// 演出中（必殺技など）はUpdateをスキップする
+	//===================================================================
+	if (SceneManager::Instance().IsCutScene())
+	{
+		return;
+	}
+
+	//===================================================================
+	// 敵の速度倍率を取得する
+	// 減速アクション中は 0.5 になり、速度・アニメ速度が半分になる
+	//===================================================================
+	float speedRate = SceneManager::Instance().GetEnemySpeedRate();
+
+	//===================================================================
 	// 死亡演出中の処理
 	//===================================================================
 	if (m_deathState == DeathState::Dissolve)
@@ -61,7 +75,8 @@ void Enemy::Update()
 		//===================================================================
 		if (m_isAttacking)
 		{
-			m_attackAnimeCnt += AttackAnimeSpeed;
+			// 攻撃アニメ速度に減速倍率を反映
+			m_attackAnimeCnt += AttackAnimeSpeed * speedRate;
 
 			// ダメージを与えるコマに達したらプレイヤーにダメージ
 			if ((int)m_attackAnimeCnt == AttackDamageFrame && !m_isDamageGiven)
@@ -103,6 +118,10 @@ void Enemy::Update()
 			{
 				Math::Vector3 enemyMove = playerPos - m_pos;
 
+				// Y成分を消して水平方向のみで追従する
+				// （ジャンプ中のプレイヤーを浮いて追わないようにする）
+				enemyMove.y = 0.0f;
+
 				static const float flipThreshold = 0.5f;
 				if (enemyMove.x > flipThreshold)
 				{
@@ -137,10 +156,10 @@ void Enemy::Update()
 				}
 				else
 				{
-					// 通常移動
+					// 通常移動（移動速度に減速倍率を反映）
 					enemyMove.Normalize();
 					m_dir = enemyMove;
-					m_pos += m_dir * m_speed;
+					m_pos += m_dir * m_speed * speedRate;
 				}
 			}
 		}
@@ -155,7 +174,8 @@ void Enemy::Update()
 	}
 	else if (m_isHurt)
 	{
-		m_hurtAnimeCnt += HurtAnimeSpeed;
+		// 被弾アニメ速度に減速倍率を反映
+		m_hurtAnimeCnt += HurtAnimeSpeed * speedRate;
 
 		if (m_hurtAnimeCnt >= (float)HurtFrameCount)
 		{
@@ -169,7 +189,8 @@ void Enemy::Update()
 	}
 	else
 	{
-		m_animeCnt += m_animeSpeed;
+		// 歩行アニメ速度に減速倍率を反映
+		m_animeCnt += m_animeSpeed * speedRate;
 
 		if (m_animeCnt >= (float)FrameCount)
 		{
@@ -278,6 +299,13 @@ void Enemy::PostUpdate()
 		}
 	}
 
+	//===================================================================
+	// Y座標を固定する
+	// ホーミング中も常に一定の高さを保つ
+	// （ジャンプ中のプレイヤーを浮いて追わないようにする）
+	//===================================================================
+	m_pos.y = -0.25f;
+
 	m_mWorld = Math::Matrix::CreateTranslation(m_pos);
 }
 
@@ -289,19 +317,16 @@ void Enemy::DrawLit()
 
 	if (m_isAttacking)
 	{
-		// 攻撃アニメーション
 		currentFrame = (int)m_attackAnimeCnt;
 		splitX = AttackFrameCount;
 	}
 	else if (m_isHurt)
 	{
-		// 被弾アニメーション
 		currentFrame = (int)m_hurtAnimeCnt;
 		splitX = HurtFrameCount;
 	}
 	else
 	{
-		// 歩行アニメーション
 		currentFrame = (int)m_animeCnt;
 		splitX = FrameCount;
 	}

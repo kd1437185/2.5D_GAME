@@ -22,7 +22,7 @@ void Torii::Init()
 	m_polygon->SetMaterial("Asset/Textures/Effect/sprite-sheet1.png");
 	m_polygon->SetPivot(KdSquarePolygon::PivotType::Center_Middle);
 	m_polygon->SetSplit(5, 1);		// 横5コマ
-	m_polygon->SetScale(2.0f);		// サイズ調整
+	m_polygon->SetScale(3.0f);		// サイズ調整
 	m_polygon->SetUVRect(0);
 
 	// アニメーション初期値
@@ -40,6 +40,14 @@ void Torii::Init()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Torii::Update()
 {
+	//===================================================================
+	// 演出中（必殺技など）はUpdateをスキップする
+	//===================================================================
+	if (SceneManager::Instance().IsCutScene())
+	{
+		return;
+	}
+
 	//===================================================================
 	// ワームホールアニメーション更新
 	//===================================================================
@@ -80,6 +88,13 @@ void Torii::Update()
 			SpawnEnemy();
 		}
 	}
+
+	// 発光タイマーの更新
+	if (m_brightTimer > 0)
+	{
+		m_brightTimer--;
+	}
+
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -105,6 +120,22 @@ void Torii::DrawLit()
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 発光描画
+// 敵が出現するタイミングで鳥居を光らせる
+// タイマーが残っている間だけ DrawBright に描画する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void Torii::DrawBright()
+{
+	// 発光タイマーが0のときは描画しない
+	if (m_brightTimer <= 0) { return; }
+
+	// DrawBright に描画するだけで光って見える
+	KdShaderManager::Instance().m_StandardShader.DrawModel(
+		*m_spModel, m_mWorld
+	);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 敵を生成してシーンに追加する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Torii::SpawnEnemy()
@@ -112,9 +143,13 @@ void Torii::SpawnEnemy()
 	auto enemy = std::make_shared<Enemy>();
 	enemy->Init();
 
-	// 鳥居の座標に敵を生成する
-	enemy->SetPos(m_mWorld.Translation());
+	// 鳥居の座標に敵を生成する（Y座標は-0.25に固定）
+	Math::Vector3 spawnPos = m_mWorld.Translation();
+	spawnPos.y = -0.25f;
+	enemy->SetPos(spawnPos);
 
-	// シーンのオブジェクトリストに追加
 	SceneManager::Instance().AddObject(enemy);
+
+	// 敵が出現したら発光タイマーをセット
+	m_brightTimer = BrightTime;
 }

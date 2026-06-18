@@ -276,6 +276,7 @@
     <ClInclude Include="Src\Application\main.h" />
     <ClInclude Include="Src\Application\Object\BackGround\BackGround.h" />
     <ClInclude Include="Src\Application\Object\Effect\AttackEffect.h" />
+    <ClInclude Include="Src\Application\Object\Effect\SpecialEffect.h" />
     <ClInclude Include="Src\Application\Object\Enemy\Enemy.h" />
     <ClInclude Include="Src\Application\Object\Ground\Ground.h" />
     <ClInclude Include="Src\Application\Object\Player\Player.h" />
@@ -336,6 +337,7 @@
     <ClCompile Include="Src\Application\main.cpp" />
     <ClCompile Include="Src\Application\Object\BackGround\BackGround.cpp" />
     <ClCompile Include="Src\Application\Object\Effect\AttackEffect.cpp" />
+    <ClCompile Include="Src\Application\Object\Effect\SpecialEffect.cpp" />
     <ClCompile Include="Src\Application\Object\Enemy\Enemy.cpp" />
     <ClCompile Include="Src\Application\Object\Ground\Ground.cpp" />
     <ClCompile Include="Src\Application\Object\Player\Player.cpp" />

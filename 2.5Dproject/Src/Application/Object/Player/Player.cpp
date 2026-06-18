@@ -2,12 +2,264 @@
 
 #include "../../Scene/SceneManager.h"
 #include "../Effect/AttackEffect.h"
+#include "../Effect/SpecialEffect.h"
 
 void Player::Update()
 {
 	//===================================================================
+	// クールタイムタイマーの更新
+	//===================================================================
+	if (m_dashCoolTimer > 0) { m_dashCoolTimer--; }
+	if (m_specialCoolTimer > 0) { m_specialCoolTimer--; }
+	if (m_slowCoolTimer > 0) { m_slowCoolTimer--; }
+
+	//===================================================================
+	// 減速効果の管理
+	// 効果時間が残っている間は敵を半速にする
+	//===================================================================
+	if (m_slowEffectTimer > 0)
+	{
+		m_slowEffectTimer--;
+
+		// 敵を半速に
+		SceneManager::Instance().SetEnemySpeedRate(0.5f);
+
+		// 効果終了時に通常速度へ戻す
+		if (m_slowEffectTimer <= 0)
+		{
+			SceneManager::Instance().SetEnemySpeedRate(1.0f);
+		}
+	}
+
+	//===================================================================
+	// 残像の更新
+	// 既存の残像を薄くしていき、減速効果中は新しい残像を追加する
+	//===================================================================
+
+	// 既存の残像を薄くしていく
+	for (auto it = m_afterImages.begin(); it != m_afterImages.end();)
+	{
+		it->m_alpha -= 0.05f;
+
+		if (it->m_alpha <= 0.0f)
+		{
+			// 完全に消えたら削除
+			it = m_afterImages.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+
+	// 減速効果中は一定間隔で残像を追加する
+	if (m_slowEffectTimer > 0)
+	{
+		m_afterImageTimer++;
+
+		// 3フレームごとに残像を追加
+		if (m_afterImageTimer >= 3)
+		{
+			m_afterImageTimer = 0;
+
+			AfterImage img;
+			img.m_pos = m_pos;
+			img.m_isFlip = (m_lastDirType & DirType::Left) != 0;
+			img.m_alpha = 0.5f;	// 初期透明度
+
+			// 現在表示中のテクスチャを残像として保存
+			if (m_pCurrentTextures != nullptr)
+			{
+				int cnt = (int)m_animeInfo.count % (int)m_pCurrentTextures->size();
+				img.m_spTex = (*m_pCurrentTextures)[cnt];
+			}
+
+			m_afterImages.push_back(img);
+		}
+	}
+
+	//===================================================================
+	// 必殺技中の処理
+	// プレイヤーアニメーション以外の動きを停止する
+	//===================================================================
+	if (m_isSpecial)
+	{
+		m_specialAnimeCnt += SpecialAnimeSpeed;
+
+		int animeCnt = (int)m_specialAnimeCnt;
+
+		if (animeCnt >= SpecialFrameCount)
+		{
+			m_isSpecial = false;
+			m_specialAnimeCnt = 0.0f;
+			m_animeInfo.count = 0;
+
+			SceneManager::Instance().SetCutScene(false);
+		}
+		else
+		{
+			m_polygon.SetMaterial(m_animTexturesSpecial[animeCnt]);
+		}
+
+		return;
+	}
+
+	//===================================================================
+	// 減速発動アニメーション中の処理
+	// 発動アニメ中は他の動きを止める
+	//===================================================================
+	if (m_isSlow)
+	{
+		m_slowAnimeCnt += SlowAnimeSpeed;
+
+		int animeCnt = (int)m_slowAnimeCnt;
+
+		if (animeCnt >= SlowFrameCount)
+		{
+			// 発動アニメ終了 → 減速効果開始
+			m_isSlow = false;
+			m_slowAnimeCnt = 0.0f;
+			m_slowEffectTimer = SlowEffectTime;
+			m_animeInfo.count = 0;
+
+			// 敵の完全停止を解除（ここから半速になる）
+			SceneManager::Instance().SetCutScene(false);
+		}
+		else
+		{
+			m_polygon.SetMaterial(m_animTexturesSlow[animeCnt]);
+		}
+
+		return;	// 発動アニメ中は以降をスキップ
+	}
+
+	//===================================================================
+	// 回避中の処理
+	// ダッシュ中は他の動作を行えない
+	//===================================================================
+	if (m_isDashing)
+	{
+		// 回避アニメーションを進める
+		m_dashAnimeCnt += DashAnimeSpeed;
+
+		// 向いている方向に高速移動
+		Math::Vector3 dashDir = Math::Vector3::Zero;
+
+		if (m_lastDirType & DirType::Left)
+		{
+			dashDir = Math::Vector3(-1.0f, 0.0f, 0.0f);
+		}
+		else
+		{
+			dashDir = Math::Vector3(1.0f, 0.0f, 0.0f);
+		}
+
+		m_pos += dashDir * DashSpeed;
+
+		// 回避アニメーション終了
+		if ((int)m_dashAnimeCnt >= DashFrameCount)
+		{
+			m_isDashing = false;
+			m_isDashInvincible = false;
+			m_dashAnimeCnt = 0.0f;
+			m_animeInfo.count = 0;
+		}
+
+		// 重力処理
+		m_gravity += 0.005f;
+		m_pos.y -= m_gravity;
+
+		//===================================================================
+		// 当たり判定・・・レイ判定（地面との判定）
+		//===================================================================
+		KdCollider::RayInfo rayInfo;
+		rayInfo.m_pos = m_pos;
+
+		static const float enableStepHigh = 0.2f;
+		rayInfo.m_pos.y += enableStepHigh;
+		rayInfo.m_dir = { 0.0f, -1.0f, 0.0f };
+		rayInfo.m_range = enableStepHigh + m_gravity;
+		rayInfo.m_type = KdCollider::TypeGround;
+
+		std::list<KdCollider::CollisionResult> retRayList;
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			obj->Intersects(rayInfo, &retRayList);
+		}
+
+		bool  hit = false;
+		float maxOverLap = 0;
+		Math::Vector3 groundPos = {};
+
+		for (auto& ret : retRayList)
+		{
+			if (maxOverLap < ret.m_overlapDistance)
+			{
+				maxOverLap = ret.m_overlapDistance;
+				groundPos = ret.m_hitPos;
+				hit = true;
+			}
+		}
+
+		if (hit)
+		{
+			m_pos = groundPos;
+			m_gravity = 0.0f;
+		}
+
+		//===================================================================
+		// 球（スフィア）判定（壁との判定）
+		//===================================================================
+		KdCollider::SphereInfo sphere;
+		sphere.m_sphere.Center = m_pos;
+		sphere.m_sphere.Center.y += 0.5f;
+		sphere.m_sphere.Radius = 0.3f;
+		sphere.m_type = KdCollider::TypeGround;
+
+		std::list<KdCollider::CollisionResult> retSphereList;
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			obj->Intersects(sphere, &retSphereList);
+		}
+
+		maxOverLap = 0;
+		hit = false;
+		Math::Vector3 hitDir;
+
+		for (auto& ret : retSphereList)
+		{
+			if (maxOverLap < ret.m_overlapDistance)
+			{
+				maxOverLap = ret.m_overlapDistance;
+				hitDir = ret.m_hitDir;
+				hit = true;
+			}
+		}
+
+		if (hit == true)
+		{
+			hitDir.Normalize();
+			m_pos += hitDir * maxOverLap;
+		}
+
+		// テクスチャをセット
+		int animeCnt = (int)m_dashAnimeCnt;
+		if (animeCnt >= DashFrameCount) { animeCnt = DashFrameCount - 1; }
+
+		if (m_lastDirType & DirType::Left)
+		{
+			m_polygon.SetMaterial(m_animTexturesDashL[animeCnt]);
+		}
+		else
+		{
+			m_polygon.SetMaterial(m_animTexturesDashR[animeCnt]);
+		}
+
+		return;
+	}
+
+	//===================================================================
 	// 攻撃入力
-	// 攻撃中でない場合のみ受け付ける
 	//===================================================================
 	if (GetAsyncKeyState('Z') & 0x8000)
 	{
@@ -17,39 +269,30 @@ void Player::Update()
 			m_isAttacking = true;
 
 			m_animeInfo.count = 0;
-			m_animeInfo.speed = 0.3f;
+			m_animeInfo.speed = 0.2f;
 
-			// 攻撃SE再生
 			KdAudioManager::Instance().Play("Asset/Sounds/Attack.WAV", false);
 
-			//===================================================================
-			// 攻撃エフェクトを生成してシーンに追加する
-			// 向いている方向にオフセットをかけてプレイヤーの前方に出す
-			//===================================================================
 			auto effect = std::make_shared<AttackEffect>();
 			effect->Init();
 
-			// 向いている方向に応じてエフェクトの座標とフリップを設定
-			// 左向きなら左前方・右向きなら右前方にエフェクトを出す
 			Math::Vector3 effectPos = m_pos;
-			effectPos.y += 0.5f;	// 少し上（キャラの中心あたり）
+			effectPos.y += 0.5f;
 
 			bool isFlip = false;
 
 			if (m_lastDirType & DirType::Left)
 			{
-				effectPos.x -= 1.0f;	// 左前方
-				isFlip = true;	// 左向きは反転
+				effectPos.x -= 1.0f;
+				isFlip = true;
 			}
 			else
 			{
-				effectPos.x += 1.0f;	// 右前方
+				effectPos.x += 1.0f;
 				isFlip = false;
 			}
 
 			effect->Setup(effectPos, isFlip);
-
-			// シーンのオブジェクトリストに追加
 			SceneManager::Instance().AddObject(effect);
 		}
 	}
@@ -59,11 +302,62 @@ void Player::Update()
 	}
 
 	//===================================================================
-// 移動入力（攻撃中は受け付けない）
-//===================================================================
+	// 回避入力
+	//===================================================================
+	if (GetAsyncKeyState('X') & 0x8000)
+	{
+		if (!m_isAttacking && m_dashCoolTimer <= 0)
+		{
+			m_isDashing = true;
+			m_isDashInvincible = true;
+			m_dashAnimeCnt = 0.0f;
+
+			m_dashCoolTimer = DashCoolTime;
+		}
+	}
+
+	//===================================================================
+	// 必殺技入力
+	//===================================================================
+	if (GetAsyncKeyState('A') & 0x8000)
+	{
+		if (!m_isAttacking && !m_isDashing && m_specialCoolTimer <= 0)
+		{
+			m_isSpecial = true;
+			m_specialAnimeCnt = 0.0f;
+
+			m_specialCoolTimer = SpecialCoolTime;
+
+			SceneManager::Instance().SetCutScene(true);
+
+			auto effect = std::make_shared<SpecialEffect>();
+			effect->Init();
+			SceneManager::Instance().AddObject(effect);
+		}
+	}
+
+	//===================================================================
+	// 減速アクション入力（Sキー）
+	// 攻撃中・回避中・必殺技中でない・クールタイム中でない場合のみ
+	//===================================================================
+	if (GetAsyncKeyState('S') & 0x8000)
+	{
+		if (!m_isAttacking && !m_isDashing && !m_isSpecial && m_slowCoolTimer <= 0)
+		{
+			m_isSlow = true;
+			m_slowAnimeCnt = 0.0f;
+			m_slowCoolTimer = SlowCoolTime;
+
+			// 発動アニメ中は敵を完全停止
+			SceneManager::Instance().SetCutScene(true);
+		}
+	}
+
+	//===================================================================
+	// 移動入力（攻撃中は受け付けない）
+	//===================================================================
 	if (!m_isAttacking)
 	{
-		// 移動関係をクリア
 		m_dir = {};
 		UINT oldDirType = m_dirType;
 		m_dirType = 0;
@@ -89,16 +383,12 @@ void Player::Update()
 			m_dirType |= DirType::Right;
 		}
 
-		// キー入力があった && 向きが以前と変わっていればアニメーション変更
 		if (m_dirType != 0 && m_dirType != oldDirType)
 		{
 			ChangeAnimation();
 		}
 
-		// ベクトルを正規化（長さを1にする）
 		m_dir.Normalize();
-
-		// 座標更新
 		m_pos += m_dir * m_speed;
 	}
 
@@ -108,15 +398,11 @@ void Player::Update()
 		m_gravity = -0.1f;
 	}
 
-	// 重力を更新
 	m_gravity += 0.005f;
-
-	// 重力をキャラに反映
 	m_pos.y -= m_gravity;
 
 	//===================================================================
 	// 向きに応じてテクスチャリストを切り替える
-	// 左右キーが押されているときは最後の向きを更新する
 	//===================================================================
 	if (m_dirType & DirType::Left)
 	{
@@ -133,7 +419,6 @@ void Player::Update()
 	//===================================================================
 	if (m_isAttacking)
 	{
-		// 攻撃中：攻撃アニメーション（最後に向いていた方向）
 		if (m_lastDirType & DirType::Left)
 		{
 			m_pCurrentTextures = &m_animTexturesAttackL;
@@ -145,7 +430,6 @@ void Player::Update()
 	}
 	else if (m_dirType != 0)
 	{
-		// 移動中：歩行アニメーション
 		if (m_lastDirType & DirType::Left)
 		{
 			m_pCurrentTextures = &m_animTexturesL;
@@ -157,7 +441,6 @@ void Player::Update()
 	}
 	else
 	{
-		// 待機中：待機アニメーション
 		if (m_lastDirType & DirType::Left)
 		{
 			m_pCurrentTextures = &m_animTexturesIdleL;
@@ -174,46 +457,36 @@ void Player::Update()
 	m_animeInfo.count += m_animeInfo.speed;
 	int animeCnt = static_cast<int>(m_animeInfo.count);
 
-	// 最後のコマまで表示し終えたら
 	if (animeCnt >= (int)m_pCurrentTextures->size())
 	{
 		if (m_isAttacking)
 		{
-			// 攻撃アニメが全コマ再生されたら攻撃終了
 			m_isAttacking = false;
 			m_animeInfo.count = 0;
 			animeCnt = 0;
 		}
 		else
 		{
-			// 通常アニメはループ
 			animeCnt = 0;
 			m_animeInfo.count = 0;
 		}
 	}
 
-	// 現在のコマのテクスチャをセット
 	m_polygon.SetMaterial((*m_pCurrentTextures)[animeCnt]);
 
 	// ==========================================
 	// 当たり判定・・・レイ判定
 	// ==========================================
 	KdCollider::RayInfo rayInfo;
-
 	rayInfo.m_pos = m_pos;
 
 	static const float enableStepHigh = 0.2f;
 	rayInfo.m_pos.y += enableStepHigh;
-
 	rayInfo.m_dir = { 0.0f, -1.0f, 0.0f };
 	rayInfo.m_range = enableStepHigh + m_gravity;
 	rayInfo.m_type = KdCollider::TypeGround;
 
-	m_pDebugWire->AddDebugLine(
-		rayInfo.m_pos,
-		rayInfo.m_dir,
-		rayInfo.m_range
-	);
+	m_pDebugWire->AddDebugLine(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range);
 
 	std::list<KdCollider::CollisionResult> retRayList;
 
@@ -276,12 +549,7 @@ void Player::Update()
 
 	if (hit == true)
 	{
-		// 全方向への押し戻しを有効にする
-		// ※方向ベクトルは絶対長さ1
-		// 正規化(長さが1)
 		hitDir.Normalize();
-
-		// 押し戻し処理
 		m_pos += hitDir * maxOverLap;
 	}
 }
@@ -300,6 +568,45 @@ void Player::GenerateDepthMapFromLight()
 
 void Player::DrawLit()
 {
+	//===================================================================
+	// 残像の描画
+	// メンバの板ポリゴンを使い回して描画する（毎フレーム生成しない）
+	//===================================================================
+	for (auto& img : m_afterImages)
+	{
+		if (img.m_spTex == nullptr) { continue; }
+
+		// テクスチャを差し替える
+		m_afterImagePolygon.SetMaterial(img.m_spTex);
+
+		// m_alpha を色の明るさに使う
+		// 新しい残像ほど明るく、古い残像ほど暗くなる
+		float bright = img.m_alpha;
+		m_afterImagePolygon.SetColor(
+			Math::Color(bright * 2.0f, bright * 0.6f, bright * 0.6f, 1.0f)
+		);
+
+		// 反転処理
+		if (img.m_isFlip)
+		{
+			m_afterImagePolygon.SetUVRect(
+				Math::Vector2(1.0f, 0.0f), Math::Vector2(0.0f, 1.0f)
+			);
+		}
+		else
+		{
+			m_afterImagePolygon.SetUVRect(
+				Math::Vector2(0.0f, 0.0f), Math::Vector2(1.0f, 1.0f)
+			);
+		}
+
+		Math::Matrix afterMat = Math::Matrix::CreateTranslation(img.m_pos);
+		KdShaderManager::Instance().m_StandardShader.DrawPolygon(
+			m_afterImagePolygon, afterMat
+		);
+	}
+
+	// 本体の描画
 	KdShaderManager::Instance().m_StandardShader.DrawPolygon(m_polygon, m_mWorld);
 }
 
@@ -360,13 +667,8 @@ void Player::Init()
 	// 初期は待機・左向きを使用
 	m_pCurrentTextures = &m_animTexturesIdleL;
 
-	// 板ポリにテクスチャをセット
 	m_polygon.SetMaterial((*m_pCurrentTextures)[0]);
-
-	// 板ポリの原点（真ん中下段）
 	m_polygon.SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
-
-	// 1枚画像なので分割なし
 	m_polygon.SetSplit(1, 1);
 
 	// アニメーション初期値
@@ -380,17 +682,73 @@ void Player::Init()
 	m_dir = {};
 	m_speed = 0.1f;
 
-	// 重力
 	m_gravity = 0.0f;
-
-	// 行列
 	m_mWorld = Math::Matrix::Identity;
 
 	m_keyFlg = false;
 	m_isAttacking = false;
 
-	// デバッグワイヤー生成
 	m_pDebugWire = std::make_unique<KdDebugWireFrame>();
+
+	// 回避・左向きテクスチャ（000〜008）
+	for (int i = 0; i <= 8; ++i)
+	{
+		char fileName[256];
+		sprintf_s(fileName, "Asset/Textures/Player/DashL/frame_%03d.png", i);
+		m_animTexturesDashL.push_back(std::make_shared<KdTexture>(fileName));
+	}
+
+	// 回避・右向きテクスチャ（000〜008）
+	for (int i = 0; i <= 8; ++i)
+	{
+		char fileName[256];
+		sprintf_s(fileName, "Asset/Textures/Player/DashR/frame_%03d.png", i);
+		m_animTexturesDashR.push_back(std::make_shared<KdTexture>(fileName));
+	}
+
+	// 回避関連初期化
+	m_isDashing = false;
+	m_isDashInvincible = false;
+	m_dashAnimeCnt = 0.0f;
+	m_dashCoolTimer = 0;
+
+	// 必殺技テクスチャ（000〜008・正面なので左右共通）
+	for (int i = 0; i <= 8; ++i)
+	{
+		char fileName[256];
+		sprintf_s(fileName, "Asset/Textures/Player/Special3/frame_%03d.png", i);
+		m_animTexturesSpecial.push_back(std::make_shared<KdTexture>(fileName));
+	}
+
+	// 必殺技関連初期化
+	m_isSpecial = false;
+	m_specialAnimeCnt = 0.0f;
+	m_specialCoolTimer = 0;
+
+	//===================================================================
+	// 減速発動テクスチャ（000〜008・正面共通）
+	//===================================================================
+	for (int i = 0; i <= 8; ++i)
+	{
+		char fileName[256];
+		sprintf_s(fileName, "Asset/Textures/Player/Special1/frame_%03d.png", i);
+		m_animTexturesSlow.push_back(std::make_shared<KdTexture>(fileName));
+	}
+
+	// 減速関連初期化
+	m_isSlow = false;
+	m_slowAnimeCnt = 0.0f;
+	m_slowEffectTimer = 0;
+	m_slowCoolTimer = 0;
+	m_afterImageTimer = 0;
+
+	//===================================================================
+	// 残像用ポリゴンの初期設定
+	// 毎フレーム生成しないようにメンバとして1つ持つ
+	//===================================================================
+	m_afterImagePolygon.SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
+	m_afterImagePolygon.SetSplit(1, 1);
+
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -404,11 +762,11 @@ void Player::ChangeAnimation()
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // ダメージを受ける関数
-// 将来的にHPを減らす処理を追加する
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Player::TakeDamage(int _damage)
 {
-	// 現時点では受けたことをログに表示するだけ
-	// 将来的にHPを減らす処理を追加する
+	// 回避中は無敵なのでダメージを受けない
+	if (m_isDashInvincible) { return; }
+
 	KdDebugGUI::Instance().AddLog("Player TakeDamage:%d", _damage);
 }

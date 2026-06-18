@@ -11,13 +11,31 @@ void GameScene::Event()
 	//===================================================================
 	// デバッグ情報の表示
 	// 毎フレームクリアしてから最新情報を1行で表示する
-	// ログが横に伸びないように ClearLog() を毎フレーム呼ぶ
 	//===================================================================
 	KdDebugGUI::Instance().ClearLog();
 
+	//===================================================================
+	// デバッグ用：エンターキーでタイトルシーンに遷移
+	//===================================================================
+	if (GetAsyncKeyState(VK_RETURN) & 0x8000)
+	{
+		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Title);
+	}
+
+	//===================================================================
+	// プレイヤーの情報を取得する
+	//===================================================================
+	Math::Vector3 playerPos = {};
+	bool          isZoom = false;	// カメラを寄せるか
+
 	if (m_wpPlayer.expired() == false)
 	{
-		Math::Vector3 playerPos = m_wpPlayer.lock()->GetPos();
+		std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
+
+		playerPos = spPlayer->GetPos();
+
+		// 必殺技中 または 減速発動アニメ中はカメラを寄せる
+		isZoom = spPlayer->IsSpecial() || spPlayer->IsSlow();
 
 		KdDebugGUI::Instance().AddLog(
 			"PlayerPos X:%.2f Y:%.2f Z:%.2f",
@@ -28,45 +46,39 @@ void GameScene::Event()
 	}
 
 	//===================================================================
-	// デバッグ用：エンターキーでタイトルシーンに遷移
+	// カメラの寄り具合を補間する
+	// 必殺技中は 1.0 に・通常時は 0.0 に徐々に近づける
 	//===================================================================
-	if (GetAsyncKeyState(VK_RETURN) & 0x8000)
-	{
-		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Title);
-	}
+	float targetRate = isZoom ? 1.0f : 0.0f;
 
-	// プレイヤーの最新の座標を取得する
-	Math::Vector3 playerPos = {};
+	// 線形補間で滑らかに変化させる
+	m_camZoomRate += (targetRate - m_camZoomRate) * 0.1f;
 
-	// weak_ptrで所持している m_player が有効かどうかを調べる
-	// expired() … 既に無効なアドレスならtrueを返す
-	if (m_wpPlayer.expired() == false)
-	{
-		// weak_ptrを lock() で shared_ptr として取得
-		std::shared_ptr<Player> spPlayer = m_wpPlayer.lock();
+	//===================================================================
+	// 寄り具合に応じてカメラの距離を変える
+	// 通常時のオフセット → 寄り時のオフセット へ補間する
+	//===================================================================
+	Math::Vector3 normalOffset = Math::Vector3(0.0f, 4.0f, -5.0f);	// 通常
+	Math::Vector3 zoomOffset = Math::Vector3(0.0f, 2.0f, -3.0f);	// 寄り
 
-		// shared_ptrならアドレスの先にアクセス可能
-		playerPos = spPlayer->GetPos();
-	}
+	// 補間したオフセットを計算
+	Math::Vector3 camOffset = Math::Vector3::Lerp(
+		normalOffset, zoomOffset, m_camZoomRate
+	);
 
 	// カメラの座標行列を作成
-	Math::Matrix transMat;
-	transMat = Math::Matrix::CreateTranslation
-	(Math::Vector3(0.0f, 4.0f, -5.0f) + playerPos);
+	Math::Matrix transMat = Math::Matrix::CreateTranslation(camOffset + playerPos);
 
-	// カメラの回転行列を作成
-	// 少し下を向かせる
-	Math::Matrix rotMat;
-	rotMat = Math::Matrix::CreateRotationX
-	(DirectX::XMConvertToRadians(30));
+	// カメラの回転行列を作成（少し下を向かせる）
+	Math::Matrix rotMat = Math::Matrix::CreateRotationX(
+		DirectX::XMConvertToRadians(30)
+	);
 
-	// 行列を合成 (拡縮 * 回転 * 座標)
+	// 行列を合成（回転 * 座標）
 	Math::Matrix mat = rotMat * transMat;
 
 	// カメラに行列をセット
-	// この時点では画面には反映されない
 	m_camera->SetCameraMatrix(mat);
-
 }
 
 void GameScene::Init()
@@ -105,21 +117,21 @@ void GameScene::Init()
 	torii = std::make_shared<Torii>();
 	torii->Init();
 	torii->SetPos(Math::Vector3(-10.0f, 0.0f, 10.0f));
-	torii->SetMaxSpawnCount(5);		// 最大5体
+	torii->SetMaxSpawnCount(20);		// 最大20体
 	m_objList.push_back(torii);
 
 	// 鳥居2
 	torii = std::make_shared<Torii>();
 	torii->Init();
 	torii->SetPos(Math::Vector3(0.0f, 0.0f, 10.0f));
-	torii->SetMaxSpawnCount(5);
+	torii->SetMaxSpawnCount(20);
 	m_objList.push_back(torii);
 
 	// 鳥居3
 	torii = std::make_shared<Torii>();
 	torii->Init();
 	torii->SetPos(Math::Vector3(10.0f, 0.0f, 10.0f));
-	torii->SetMaxSpawnCount(5);
+	torii->SetMaxSpawnCount(20);
 	m_objList.push_back(torii);
 
 }

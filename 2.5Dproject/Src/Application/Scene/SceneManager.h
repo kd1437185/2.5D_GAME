@@ -38,6 +38,17 @@ public:
 	// 現在のシーンにオブジェクトを追加
 	void AddObject(const std::shared_ptr<KdGameObject>& _obj);
 
+	// 演出中フラグの取得・設定
+	// 必殺技などの演出中は敵などの更新を止めるために使う
+	bool IsCutScene() const { return m_isCutScene; }
+	void SetCutScene(bool _flag) { m_isCutScene = _flag; }
+
+	// 敵の速度倍率の取得・設定
+	// 1.0：通常　0.5：半速
+	// 減速アクション中は Enemy がこの値を参照して速度・アニメ速度を変える
+	float GetEnemySpeedRate() const { return m_enemySpeedRate; }
+	void  SetEnemySpeedRate(float _rate) { m_enemySpeedRate = _rate; }
+
 private:
 
 	// マネージャーの初期化
@@ -73,6 +84,13 @@ private:
 
 	// 現在の遷移状態
 	ChangeState m_changeState = ChangeState::None;
+
+	// 演出中フラグ
+	// true のとき敵などはUpdateをスキップする
+	bool m_isCutScene = false;
+
+	// 敵の速度倍率（1.0：通常）
+	float m_enemySpeedRate = 1.0f;
 
 private:
 

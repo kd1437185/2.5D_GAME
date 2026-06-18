@@ -13,9 +13,10 @@ public:
 	Torii() {}
 	~Torii() override {}
 
-	void Init()    override;
-	void Update()  override;
-	void DrawLit() override;
+	void Init()			override;
+	void Update()		override;
+	void DrawLit()		override;
+	void DrawBright()	override;
 
 	//===================================================================
 	// 最大出現数を設定する
@@ -58,8 +59,22 @@ private:
 
 	// 生成間隔（フレーム数）
 	// 60fps × 10秒 = 600フレーム
-	static constexpr int SpawnInterval = 600;
+	static constexpr int SpawnInterval = 180;
 
 	// 最大生成数（外部から変更可能）
-	int m_maxSpawnCount = 5;
+	int m_maxSpawnCount = 20;
+
+	//===================================================================
+	// 発光関連
+	// 敵が出現するタイミングで鳥居を光らせる
+	//===================================================================
+
+	// 発光タイマー（フレーム数）
+	int m_brightTimer = 0;
+
+	// 発光時間（フレーム数）
+	static constexpr int BrightTime = 60;
+
+	// 発光の強さ
+	static constexpr float BrightIntensity = 3.0f;
 };

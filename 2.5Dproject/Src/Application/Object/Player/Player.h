@@ -39,6 +39,12 @@ public:
 	// 敵からダメージを受ける関数
 	void TakeDamage(int _damage);
 
+	// 必殺技中かどうか取得（カメラ演出用）
+	bool IsSpecial() const { return m_isSpecial; }
+
+	// 減速発動アニメ中かどうか取得（カメラ演出用）
+	bool IsSlow() const { return m_isSlow; }
+
 private:
 
 	void ChangeAnimation();
@@ -96,4 +102,121 @@ private:
 
 	// 押しっぱ防止
 	bool m_keyFlg = false;
+
+	//===================================================================
+	// 回避関連
+	//===================================================================
+
+	// 回避中フラグ
+	bool m_isDashing = false;
+
+	// 回避無敵フラグ
+	// true のとき敵の攻撃を受けない
+	bool m_isDashInvincible = false;
+
+	// 回避アニメーションカウント
+	float m_dashAnimeCnt = 0.0f;
+
+	// 回避アニメーションの総コマ数（9コマ）
+	static constexpr int DashFrameCount = 9;
+
+	// 回避アニメーションの速度
+	static constexpr float DashAnimeSpeed = 0.5f;
+
+	// 回避速度
+	static constexpr float DashSpeed = 0.2f;
+
+	// 回避クールタイムタイマー（フレーム数）
+	int m_dashCoolTimer = 0;
+
+	// 回避クールタイム（フレーム数）
+	// 後で変更しやすいように定数で管理
+	// 60fps × 1秒 = 60フレーム
+	static constexpr int DashCoolTime = 60;
+
+	// 回避テクスチャリスト（左向き）
+	std::vector<std::shared_ptr<KdTexture>> m_animTexturesDashL;
+
+	// 回避テクスチャリスト（右向き）
+	std::vector<std::shared_ptr<KdTexture>> m_animTexturesDashR;
+
+	//===================================================================
+	// 必殺技関連
+	//===================================================================
+
+	// 必殺技中フラグ
+	bool m_isSpecial = false;
+
+	// 必殺技アニメーションカウント
+	float m_specialAnimeCnt = 0.0f;
+
+	// 必殺技アニメーションの総コマ数（9コマ）
+	static constexpr int SpecialFrameCount = 9;
+
+	// 必殺技アニメーションの速度
+	static constexpr float SpecialAnimeSpeed = 0.2f;
+
+	// 必殺技クールタイムタイマー（フレーム数）
+	int m_specialCoolTimer = 0;
+
+	// 必殺技クールタイム（フレーム数）
+	// 後で調整しやすいように定数で管理
+	static constexpr int SpecialCoolTime = 300;	// 5秒
+
+	// 必殺技テクスチャリスト（正面・左右共通）
+	std::vector<std::shared_ptr<KdTexture>> m_animTexturesSpecial;
+
+	//===================================================================
+// 減速アクション関連
+//===================================================================
+
+// 減速アクション中フラグ
+	bool m_isSlow = false;
+
+	// 減速発動アニメーションカウント
+	float m_slowAnimeCnt = 0.0f;
+
+	// 減速発動アニメーションの総コマ数（9コマ）
+	static constexpr int SlowFrameCount = 9;
+
+	// 減速発動アニメーションの速度
+	static constexpr float SlowAnimeSpeed = 0.2f;
+
+	// 減速効果の残り時間（フレーム数）
+	int m_slowEffectTimer = 0;
+
+	// 減速効果時間（フレーム数）
+	// 後で調整しやすいように定数で管理
+	static constexpr int SlowEffectTime = 300;	// 5秒
+
+	// 減速クールタイムタイマー
+	int m_slowCoolTimer = 0;
+
+	// 減速クールタイム（フレーム数）
+	static constexpr int SlowCoolTime = 600;	// 10秒
+
+	// 減速発動アニメーション用テクスチャ（正面・共通）
+	std::vector<std::shared_ptr<KdTexture>> m_animTexturesSlow;
+
+	//===================================================================
+	// 残像関連
+	//===================================================================
+
+	// 残像1個分の情報
+	struct AfterImage
+	{
+		Math::Vector3                m_pos;		// 座標
+		std::shared_ptr<KdTexture>   m_spTex;	// そのときのテクスチャ
+		bool                         m_isFlip;	// 左右反転
+		float                        m_alpha;	// 透明度
+	};
+
+	// 残像のリスト
+	std::list<AfterImage> m_afterImages;
+
+	// 残像を出す間隔のカウンタ
+	int m_afterImageTimer = 0;
+
+	// 残像描画用の板ポリゴン（毎フレーム生成を避けるためメンバ化）
+	KdSquarePolygon m_afterImagePolygon;
 };
