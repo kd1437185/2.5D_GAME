@@ -97,6 +97,9 @@
     <Filter Include="Src\Application\Object\Effect">
       <UniqueIdentifier>{610d0e1e-3edc-49a3-ba5f-280b9465a2eb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Object\Torii">
+      <UniqueIdentifier>{80a81598-974e-493e-a921-c93924b0bd6c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -291,6 +294,9 @@
     <ClInclude Include="Src\Application\Object\Effect\AttackEffect.h">
       <Filter>Src\Application\Object\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Object\Torii\Torii.h">
+      <Filter>Src\Application\Object\Torii</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -454,6 +460,9 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Object\Effect\AttackEffect.cpp">
       <Filter>Src\Application\Object\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Object\Torii\Torii.cpp">
+      <Filter>Src\Application\Object\Torii</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

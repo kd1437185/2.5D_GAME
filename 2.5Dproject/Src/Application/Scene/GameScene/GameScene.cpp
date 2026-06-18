@@ -3,8 +3,8 @@
 #include "../../Object/BackGround/BackGround.h"
 #include "../../Object/Ground/Ground.h"
 #include "../../Object/Player/Player.h"
-#include "../../Object/Enemy/Enemy.h"
 #include "../FadeManager/FadeManager.h"
+#include "../../Object/Torii/Torii.h"
 
 void GameScene::Event()
 {
@@ -52,7 +52,7 @@ void GameScene::Event()
 	// カメラの座標行列を作成
 	Math::Matrix transMat;
 	transMat = Math::Matrix::CreateTranslation
-	(Math::Vector3(0.0f, 3.0f, -3.0f) + playerPos);
+	(Math::Vector3(0.0f, 4.0f, -5.0f) + playerPos);
 
 	// カメラの回転行列を作成
 	// 少し下を向かせる
@@ -96,13 +96,30 @@ void GameScene::Init()
 	// プレイヤーの情報をシーン側が保持しておく
 	m_wpPlayer = player;
 
-	// エネミー
-	std::shared_ptr<Enemy> enemy;
-	for (int i = 0; i < 20; ++i)
-	{
-		enemy = std::make_shared<Enemy>();		// 1 メモリ確保
-		enemy->Init();							// 2 初期化
-		enemy->SetPos({ -100.0f + i * 10,0.0f,20.0f });	// 2 初期座標をセット
-		m_objList.push_back(enemy);				// 3 リストへ追加
-	}
+	//===================================================================
+	// 鳥居を3つ配置する
+	//===================================================================
+	std::shared_ptr<Torii> torii;
+
+	// 鳥居1
+	torii = std::make_shared<Torii>();
+	torii->Init();
+	torii->SetPos(Math::Vector3(-10.0f, 0.0f, 10.0f));
+	torii->SetMaxSpawnCount(5);		// 最大5体
+	m_objList.push_back(torii);
+
+	// 鳥居2
+	torii = std::make_shared<Torii>();
+	torii->Init();
+	torii->SetPos(Math::Vector3(0.0f, 0.0f, 10.0f));
+	torii->SetMaxSpawnCount(5);
+	m_objList.push_back(torii);
+
+	// 鳥居3
+	torii = std::make_shared<Torii>();
+	torii->Init();
+	torii->SetPos(Math::Vector3(10.0f, 0.0f, 10.0f));
+	torii->SetMaxSpawnCount(5);
+	m_objList.push_back(torii);
+
 }

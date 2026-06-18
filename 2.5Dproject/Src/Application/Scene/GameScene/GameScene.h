@@ -4,6 +4,7 @@
 
 // 前方宣言
 class Player;
+class Torii;
 
 class GameScene : public BaseScene
 {
