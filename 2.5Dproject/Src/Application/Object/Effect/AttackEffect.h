@@ -49,4 +49,8 @@ private:
 
 	// 左右反転フラグ
 	bool m_isFlip = false;
+
+	// ヒット済みフラグ
+	// 一度敵にヒットしたら以降は当たり判定しない
+	bool m_isHit = false;
 };

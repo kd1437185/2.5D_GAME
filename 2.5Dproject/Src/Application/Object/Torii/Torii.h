@@ -59,7 +59,7 @@ private:
 
 	// 生成間隔（フレーム数）
 	// 60fps × 10秒 = 600フレーム
-	static constexpr int SpawnInterval = 180;
+	static constexpr int SpawnInterval = 120;
 
 	// 最大生成数（外部から変更可能）
 	int m_maxSpawnCount = 20;

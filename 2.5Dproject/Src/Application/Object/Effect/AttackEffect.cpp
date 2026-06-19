@@ -2,6 +2,7 @@
 
 #include "../../Scene/SceneManager.h"
 #include "../Enemy/Enemy.h"
+#include "../Player/Player.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 初期化
@@ -65,13 +66,20 @@ void AttackEffect::Update()
 
 	//===================================================================
 	// 敵との当たり判定
-	// TypeDamage のスフィアで全オブジェクトを走査して
-	// Enemy に当たったら即座に消滅させる
+	// 一度ヒットしたら以降は判定しない（SPが増えすぎないように）
 	//===================================================================
+	if (m_isHit) { return; }
+
 	KdCollider::SphereInfo sphere;
 	sphere.m_sphere.Center = m_pos;
 	sphere.m_sphere.Radius = CollisionRadius;
 	sphere.m_type = KdCollider::TypeDamage;
+
+	// ヒットしたかどうか（このフレームで）
+	bool hitThisFrame = false;
+
+	// プレイヤーを探すための変数
+	std::shared_ptr<Player> player = nullptr;
 
 	for (auto& obj : SceneManager::Instance().GetObjList())
 	{
@@ -79,7 +87,6 @@ void AttackEffect::Update()
 		if (obj.get() == this) { continue; }
 
 		// Enemy かどうか確認する
-		// dynamic_pointer_cast で Enemy 以外は nullptr が返る
 		std::shared_ptr<Enemy> enemy = std::dynamic_pointer_cast<Enemy>(obj);
 		if (enemy == nullptr) { continue; }
 
@@ -88,18 +95,36 @@ void AttackEffect::Update()
 		if (obj->Intersects(sphere, &results))
 		{
 			// ノックバック方向：敵の進行方向の逆
-			// enemy->m_dir の逆方向にノックバックさせる
-			// m_dir は private なので GetDir() を追加するか
-			// エフェクトからプレイヤー→敵の方向で計算する
 			Math::Vector3 knockBackDir = -(enemy->GetDir());
 			knockBackDir.Normalize();
 
-			// ノックバックの強さ
 			static constexpr float KnockBackPower = 0.3f;
 
 			// ダメージとノックバックを与える
 			enemy->TakeDamage(1, knockBackDir * KnockBackPower);
+
+			// このフレームでヒットした
+			hitThisFrame = true;
+
+			//===================================================================
+			// プレイヤーを探してSPを増やす（ヒットした敵の数だけ）
+			//===================================================================
+			for (auto& obj2 : SceneManager::Instance().GetObjList())
+			{
+				std::shared_ptr<Player> p = std::dynamic_pointer_cast<Player>(obj2);
+				if (p != nullptr)
+				{
+					p->AddSp(10);
+					break;
+				}
+			}
 		}
+	}
+
+	// このフレームで1体でもヒットしたらヒット済みにする
+	if (hitThisFrame)
+	{
+		m_isHit = true;
 	}
 }
 

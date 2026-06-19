@@ -324,6 +324,19 @@ void Application::Execute()
 		//=========================================
 
 		m_fpsController.Update();
+
+		//=========================================
+		// タイトルバーの更新（タイトル名 + FPS表示）
+		//=========================================
+		{
+			char titleBuf[256];
+			sprintf_s(
+				titleBuf,
+				"GameTitle  FPS:%d",	// タイトル名は後で変更
+				m_fpsController.m_nowfps
+			);
+			SetWindowTextA(m_window.GetWndHandle(), titleBuf);
+		}
 	}
 
 	//===================================================================

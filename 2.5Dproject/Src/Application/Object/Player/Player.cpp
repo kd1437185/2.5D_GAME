@@ -486,7 +486,7 @@ void Player::Update()
 	rayInfo.m_range = enableStepHigh + m_gravity;
 	rayInfo.m_type = KdCollider::TypeGround;
 
-	m_pDebugWire->AddDebugLine(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range);
+	//m_pDebugWire->AddDebugLine(rayInfo.m_pos, rayInfo.m_dir, rayInfo.m_range);
 
 	std::list<KdCollider::CollisionResult> retRayList;
 
@@ -524,7 +524,7 @@ void Player::Update()
 	sphere.m_sphere.Radius = 0.3f;
 	sphere.m_type = KdCollider::TypeGround;
 
-	m_pDebugWire->AddDebugSphere(sphere.m_sphere.Center, sphere.m_sphere.Radius);
+	//m_pDebugWire->AddDebugSphere(sphere.m_sphere.Center, sphere.m_sphere.Radius);
 
 	std::list<KdCollider::CollisionResult> retSphereList;
 
@@ -608,6 +608,141 @@ void Player::DrawLit()
 
 	// 本体の描画
 	KdShaderManager::Instance().m_StandardShader.DrawPolygon(m_polygon, m_mWorld);
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 2D描画
+// HPバーとSPバーを画面左上に表示する
+// 座標系：画面中央が(0,0)・右が+X・上が+Y
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void Player::DrawSprite()
+{
+	//===================================================================
+	// バーの基本サイズ
+	//===================================================================
+	const float barW = 512.0f;	// バーの幅
+	const float barH = 48.0f;	// バーの高さ
+
+	//===================================================================
+	// HPバーの表示位置（画面左上）
+	// 中央原点なので X = -640 + 余白 + 幅半分、Y = 360 - 余白 - 高さ半分
+	//===================================================================
+	float posX = -640.0f + 20.0f + barW * 0.5f;
+	float posY = 360.0f - 20.0f - barH * 0.5f;
+
+	//===================================================================
+	// === HPバー ===
+	//===================================================================
+
+	// HP割合を計算（0.0〜1.0）
+	float hpRate = (float)m_hp / (float)MaxHP;
+
+	//-------------------------------------------------
+	// HPバーの枠を先に描画
+	//-------------------------------------------------
+	KdShaderManager::Instance().m_spriteShader.DrawTex(
+		m_spHpBarBg.get(),
+		(int)posX,
+		(int)posY,
+		(int)barW,
+		(int)barH,
+		nullptr,
+		&kWhiteColor,
+		Math::Vector2(0.5f, 0.5f)
+	);
+
+	//-------------------------------------------------
+	// HPバーの中身を枠の上に描画（HP割合に応じて右から減らす）
+	//-------------------------------------------------
+	// 中身の描画幅
+	float fillW = barW * hpRate;
+
+	// 中身の左端を枠の左端に合わせるため中心X座標をずらす
+	float fillCenterX = (posX - barW * 0.5f) + fillW * 0.5f;
+
+	// UV範囲も hpRate に合わせて切り取る（右から減らすので左側を残す）
+	Math::Rectangle srcRect;
+	srcRect.x = 0;
+	srcRect.y = 0;
+	srcRect.width = (long)(m_spHpBarFill->GetWidth() * hpRate);
+	srcRect.height = (long)m_spHpBarFill->GetHeight();
+
+	// HPが0より大きいときだけ描画
+	if (fillW > 0.0f)
+	{
+		KdShaderManager::Instance().m_spriteShader.DrawTex(
+			m_spHpBarFill.get(),
+			(int)fillCenterX,
+			(int)posY,
+			(int)fillW,
+			(int)barH,
+			&srcRect,
+			&kWhiteColor,
+			Math::Vector2(0.5f, 0.5f)
+		);
+	}
+
+	//===================================================================
+	// === SPバー（HPバーの下に配置・HPより短め） ===
+	//===================================================================
+
+	// SPバー専用の幅（HPバーより短くする）
+	float spBarW = barW * 0.7f;	// HPバーの70%の長さ
+
+	// SPバーのY座標（HPバーの下に配置・上に寄せる）
+	float spPosY = posY - barH + 10.0f;
+
+	// SPバーの左端をHPバーの左端に揃える
+	// 中央原点なので左端基準で中心X座標を計算しなおす
+	float spPosX = (posX - barW * 0.5f) + spBarW * 0.5f;
+
+	//-------------------------------------------------
+	// SPバーの枠を先に描画（HPバーと同じ枠画像を使う）
+	//-------------------------------------------------
+	KdShaderManager::Instance().m_spriteShader.DrawTex(
+		m_spHpBarBg.get(),
+		(int)spPosX,
+		(int)spPosY,
+		(int)spBarW,
+		(int)barH,
+		nullptr,
+		&kWhiteColor,
+		Math::Vector2(0.5f, 0.5f)
+	);
+
+	//-------------------------------------------------
+	// SPバーの中身を枠の上に描画
+	//-------------------------------------------------
+	// SP割合を計算（0.0〜1.0）
+	float spRate = (float)m_sp / (float)MaxSP;
+
+	// SP中身の描画幅
+	float spFillW = spBarW * spRate;
+
+	// 中身の左端を枠の左端に合わせる
+	float spFillCenterX = (spPosX - spBarW * 0.5f) + spFillW * 0.5f;
+
+	// UV範囲も spRate に合わせて切り取る
+	Math::Rectangle spSrcRect;
+	spSrcRect.x = 0;
+	spSrcRect.y = 0;
+	spSrcRect.width = (long)(m_spSpBarFill->GetWidth() * spRate);
+	spSrcRect.height = (long)m_spSpBarFill->GetHeight();
+
+	// SPが0より大きいときだけ描画
+	if (spFillW > 0.0f)
+	{
+		KdShaderManager::Instance().m_spriteShader.DrawTex(
+			m_spSpBarFill.get(),
+			(int)spFillCenterX,
+			(int)spPosY,
+			(int)spFillW,
+			(int)barH,
+			&spSrcRect,
+			&kWhiteColor,
+			Math::Vector2(0.5f, 0.5f)
+		);
+	}
 }
 
 void Player::Init()
@@ -749,6 +884,25 @@ void Player::Init()
 	m_afterImagePolygon.SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
 	m_afterImagePolygon.SetSplit(1, 1);
 
+	//===================================================================
+	// HP初期化
+	//===================================================================
+	m_hp = MaxHP;
+
+	//===================================================================
+	// HPバー画像のロード
+	//===================================================================
+	m_spHpBarBg = std::make_shared<KdTexture>("Asset/Textures/UI/bg.png");
+	m_spHpBarFill = std::make_shared<KdTexture>("Asset/Textures/UI/green.png");
+
+	//===================================================================
+	// SP初期化
+	//===================================================================
+	m_sp = 0;
+
+	// SPバー中身画像のロード（枠はHPバーと共用）
+	m_spSpBarFill = std::make_shared<KdTexture>("Asset/Textures/UI/blue.png");
+
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -768,5 +922,11 @@ void Player::TakeDamage(int _damage)
 	// 回避中は無敵なのでダメージを受けない
 	if (m_isDashInvincible) { return; }
 
-	KdDebugGUI::Instance().AddLog("Player TakeDamage:%d", _damage);
+	// HPを減らす
+	m_hp -= _damage;
+
+	// HPが0以下にならないように制限
+	if (m_hp < 0) { m_hp = 0; }
+
+	KdDebugGUI::Instance().AddLog("Player TakeDamage:%d HP:%d", _damage, m_hp);
 }

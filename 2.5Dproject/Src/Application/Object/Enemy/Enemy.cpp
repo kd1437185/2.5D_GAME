@@ -3,6 +3,15 @@
 #include "../../Scene/SceneManager.h"
 #include "../Player/Player.h"
 
+
+//===================================================================
+// static メンバの実体定義
+// 全Enemyで共有するテクスチャ
+//===================================================================
+std::shared_ptr<KdTexture> Enemy::m_spTexWalk = nullptr;
+std::shared_ptr<KdTexture> Enemy::m_spTexHurt = nullptr;
+std::shared_ptr<KdTexture> Enemy::m_spTexAttack = nullptr;
+
 void Enemy::Update()
 {
 	//===================================================================
@@ -203,8 +212,22 @@ void Enemy::Init()
 {
 	m_polygon = std::make_shared<KdSquarePolygon>();
 
-	m_spTexWalk = std::make_shared<KdTexture>("Asset/Textures/Enemy/MobEnemy/WALK.png");
-	m_spTexHurt = std::make_shared<KdTexture>("Asset/Textures/Enemy/MobEnemy/HURT.png");
+	//===================================================================
+	// テクスチャのロード（まだロードされていない場合のみ）
+	// static なので最初の1体目だけロードし、以降は使い回す
+	//===================================================================
+	if (m_spTexWalk == nullptr)
+	{
+		m_spTexWalk = std::make_shared<KdTexture>("Asset/Textures/Enemy/MobEnemy/WALK.png");
+	}
+	if (m_spTexHurt == nullptr)
+	{
+		m_spTexHurt = std::make_shared<KdTexture>("Asset/Textures/Enemy/MobEnemy/HURT.png");
+	}
+	if (m_spTexAttack == nullptr)
+	{
+		m_spTexAttack = std::make_shared<KdTexture>("Asset/Textures/Enemy/MobEnemy/DOWN_SWING.png");
+	}
 
 	m_polygon->SetMaterial(m_spTexWalk);
 	m_polygon->SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
@@ -235,23 +258,25 @@ void Enemy::Init()
 
 	m_pDebugWire = std::make_unique<KdDebugWireFrame>();
 
+	//===================================================================
+	// 当たり判定の登録
+	//===================================================================
 	m_pCollider = std::make_unique<KdCollider>();
+
+	// TypeBump：敵同士が重ならないための判定
 	m_pCollider->RegisterCollisionShape(
 		"BumpCollision",
 		Math::Vector3(0.0f, 0.5f, 0.0f),
 		0.5f,
 		KdCollider::TypeBump
 	);
+
+	// TypeDamage：攻撃を受ける側の判定
 	m_pCollider->RegisterCollisionShape(
 		"DamageCollision",
 		Math::Vector3(0.0f, 0.5f, 0.0f),
 		0.5f,
 		KdCollider::TypeDamage
-	);
-
-	// 攻撃テクスチャのロード
-	m_spTexAttack = std::make_shared<KdTexture>(
-		"Asset/Textures/Enemy/MobEnemy/DOWN_SWING.png"
 	);
 
 	// 攻撃関連初期化

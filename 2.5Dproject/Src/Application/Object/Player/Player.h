@@ -30,6 +30,7 @@ public:
 
 	void GenerateDepthMapFromLight()	override;
 	void DrawLit()						override;
+	void DrawSprite()					override;
 
 	void Init()							override;
 
@@ -44,6 +45,25 @@ public:
 
 	// 減速発動アニメ中かどうか取得（カメラ演出用）
 	bool IsSlow() const { return m_isSlow; }
+
+	// HP取得（HPバー表示用）
+	int GetHp()    const { return m_hp; }
+	int GetMaxHp() const { return MaxHP; }
+
+	// SP取得（SPバー表示用）
+	int GetSp()    const { return m_sp; }
+	int GetMaxSp() const { return MaxSP; }
+
+public:
+	// SPを増やす関数
+	// 攻撃が敵にヒットしたときに呼ばれる
+	void AddSp(int _value)
+	{
+		m_sp += _value;
+
+		// 最大値を超えないように制限
+		if (m_sp > MaxSP) { m_sp = MaxSP; }
+	}
 
 private:
 
@@ -167,10 +187,10 @@ private:
 	std::vector<std::shared_ptr<KdTexture>> m_animTexturesSpecial;
 
 	//===================================================================
-// 減速アクション関連
-//===================================================================
+	// 減速アクション関連
+	//===================================================================
 
-// 減速アクション中フラグ
+	// 減速アクション中フラグ
 	bool m_isSlow = false;
 
 	// 減速発動アニメーションカウント
@@ -187,7 +207,7 @@ private:
 
 	// 減速効果時間（フレーム数）
 	// 後で調整しやすいように定数で管理
-	static constexpr int SlowEffectTime = 300;	// 5秒
+	static constexpr int SlowEffectTime = 600;	// 5秒
 
 	// 減速クールタイムタイマー
 	int m_slowCoolTimer = 0;
@@ -219,4 +239,31 @@ private:
 
 	// 残像描画用の板ポリゴン（毎フレーム生成を避けるためメンバ化）
 	KdSquarePolygon m_afterImagePolygon;
+
+	//===================================================================
+	// HP関連
+	//===================================================================
+
+	// 現在のHP
+	int m_hp = 10;
+
+	// 最大HP（後で調整可能）
+	static constexpr int MaxHP = 10;
+
+	// HPバーの画像
+	std::shared_ptr<KdTexture> m_spHpBarBg;	// 枠
+	std::shared_ptr<KdTexture> m_spHpBarFill;	// 中身
+
+	//===================================================================
+	// SP関連
+	//===================================================================
+
+	// 現在のSP
+	int m_sp = 0;
+
+	// 最大SP
+	static constexpr int MaxSP = 100;
+
+	// SPバーの中身画像
+	std::shared_ptr<KdTexture> m_spSpBarFill;	// 中身（青）
 };
