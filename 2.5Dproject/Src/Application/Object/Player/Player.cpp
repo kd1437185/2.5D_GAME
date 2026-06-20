@@ -14,6 +14,14 @@ void Player::Update()
 	if (m_slowCoolTimer > 0) { m_slowCoolTimer--; }
 
 	//===================================================================
+	// 被弾無敵タイマーの更新
+	//===================================================================
+	if (m_damageInvincibleTimer > 0)
+	{
+		m_damageInvincibleTimer--;
+	}
+
+	//===================================================================
 	// 減速効果の管理
 	// 効果時間が残っている間は敵を半速にする
 	//===================================================================
@@ -570,23 +578,18 @@ void Player::DrawLit()
 {
 	//===================================================================
 	// 残像の描画
-	// メンバの板ポリゴンを使い回して描画する（毎フレーム生成しない）
 	//===================================================================
 	for (auto& img : m_afterImages)
 	{
 		if (img.m_spTex == nullptr) { continue; }
 
-		// テクスチャを差し替える
 		m_afterImagePolygon.SetMaterial(img.m_spTex);
 
-		// m_alpha を色の明るさに使う
-		// 新しい残像ほど明るく、古い残像ほど暗くなる
 		float bright = img.m_alpha;
 		m_afterImagePolygon.SetColor(
 			Math::Color(bright * 2.0f, bright * 0.6f, bright * 0.6f, 1.0f)
 		);
 
-		// 反転処理
 		if (img.m_isFlip)
 		{
 			m_afterImagePolygon.SetUVRect(
@@ -604,6 +607,23 @@ void Player::DrawLit()
 		KdShaderManager::Instance().m_StandardShader.DrawPolygon(
 			m_afterImagePolygon, afterMat
 		);
+	}
+
+	//===================================================================
+	// 被弾無敵中の点滅処理
+	// BlinkInterval ごとに描画する・しないを切り替える
+	//===================================================================
+	if (m_damageInvincibleTimer > 0)
+	{
+		// タイマーを間隔で割った余りで表示・非表示を決める
+		// 例：間隔5なら 0〜4は表示、5〜9は非表示 を繰り返す
+		int blinkPhase = (m_damageInvincibleTimer / BlinkInterval) % 2;
+
+		// 非表示のタイミングなら本体を描画しない
+		if (blinkPhase == 1)
+		{
+			return;
+		}
 	}
 
 	// 本体の描画
@@ -903,6 +923,9 @@ void Player::Init()
 	// SPバー中身画像のロード（枠はHPバーと共用）
 	m_spSpBarFill = std::make_shared<KdTexture>("Asset/Textures/UI/blue.png");
 
+	// 被弾無敵初期化
+	m_damageInvincibleTimer = 0;
+
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -922,11 +945,17 @@ void Player::TakeDamage(int _damage)
 	// 回避中は無敵なのでダメージを受けない
 	if (m_isDashInvincible) { return; }
 
+	// 被弾無敵中はダメージを受けない
+	if (m_damageInvincibleTimer > 0) { return; }
+
 	// HPを減らす
 	m_hp -= _damage;
 
 	// HPが0以下にならないように制限
 	if (m_hp < 0) { m_hp = 0; }
+
+	// 被弾無敵をセット（この間点滅して無敵になる）
+	m_damageInvincibleTimer = DamageInvincibleTime;
 
 	KdDebugGUI::Instance().AddLog("Player TakeDamage:%d HP:%d", _damage, m_hp);
 }

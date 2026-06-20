@@ -231,7 +231,7 @@ void Enemy::Init()
 
 	m_polygon->SetMaterial(m_spTexWalk);
 	m_polygon->SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
-	m_polygon->SetScale(2.0f);
+	m_polygon->SetScale(1.0f);
 	m_polygon->SetSplit(9, 1);
 	m_polygon->SetUVRect(0);
 
