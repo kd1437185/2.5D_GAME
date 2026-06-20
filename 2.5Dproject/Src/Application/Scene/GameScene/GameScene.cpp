@@ -83,6 +83,7 @@ void GameScene::Event()
 
 void GameScene::Init()
 {
+
 	// カメラ 生成＆視野角設定
 	m_camera = std::make_unique<KdCamera>();	// 1 メモリ確保
 	m_camera->SetProjectionMatrix(60);			// 2 視野角設定

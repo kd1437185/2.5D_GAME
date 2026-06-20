@@ -49,6 +49,7 @@ public:
 	float GetEnemySpeedRate() const { return m_enemySpeedRate; }
 	void  SetEnemySpeedRate(float _rate) { m_enemySpeedRate = _rate; }
 
+
 private:
 
 	// マネージャーの初期化
