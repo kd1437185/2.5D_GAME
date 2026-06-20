@@ -3,6 +3,7 @@
 #include "../../Scene/SceneManager.h"
 #include "../Enemy/Enemy.h"
 #include "../Player/Player.h"
+#include "../Torii/Torii.h"
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 初期化
@@ -86,38 +87,52 @@ void AttackEffect::Update()
 		// 自分自身はスキップ
 		if (obj.get() == this) { continue; }
 
-		// Enemy かどうか確認する
+		//===================================================================
+		// 敵へのヒット判定
+		//===================================================================
 		std::shared_ptr<Enemy> enemy = std::dynamic_pointer_cast<Enemy>(obj);
-		if (enemy == nullptr) { continue; }
-
-		// 当たり判定を実行
-		std::list<KdCollider::CollisionResult> results;
-		if (obj->Intersects(sphere, &results))
+		if (enemy != nullptr)
 		{
-			// ノックバック方向：敵の進行方向の逆
-			Math::Vector3 knockBackDir = -(enemy->GetDir());
-			knockBackDir.Normalize();
-
-			static constexpr float KnockBackPower = 0.3f;
-
-			// ダメージとノックバックを与える
-			enemy->TakeDamage(1, knockBackDir * KnockBackPower);
-
-			// このフレームでヒットした
-			hitThisFrame = true;
-
-			//===================================================================
-			// プレイヤーを探してSPを増やす（ヒットした敵の数だけ）
-			//===================================================================
-			for (auto& obj2 : SceneManager::Instance().GetObjList())
+			std::list<KdCollider::CollisionResult> results;
+			if (obj->Intersects(sphere, &results))
 			{
-				std::shared_ptr<Player> p = std::dynamic_pointer_cast<Player>(obj2);
-				if (p != nullptr)
+				Math::Vector3 knockBackDir = -(enemy->GetDir());
+				knockBackDir.Normalize();
+
+				static constexpr float KnockBackPower = 0.3f;
+				enemy->TakeDamage(1, knockBackDir * KnockBackPower);
+
+				hitThisFrame = true;
+
+				// プレイヤーのSPを増やす
+				for (auto& obj2 : SceneManager::Instance().GetObjList())
 				{
-					p->AddSp(10);
-					break;
+					std::shared_ptr<Player> p = std::dynamic_pointer_cast<Player>(obj2);
+					if (p != nullptr)
+					{
+						p->AddSp(10);
+						break;
+					}
 				}
 			}
+			continue;
+		}
+
+		//===================================================================
+		// 鳥居へのヒット判定
+		//===================================================================
+		std::shared_ptr<Torii> torii = std::dynamic_pointer_cast<Torii>(obj);
+		if (torii != nullptr)
+		{
+			std::list<KdCollider::CollisionResult> results;
+			if (obj->Intersects(sphere, &results))
+			{
+				// 鳥居にダメージを与える
+				torii->TakeDamage(1);
+
+				hitThisFrame = true;
+			}
+			continue;
 		}
 	}
 

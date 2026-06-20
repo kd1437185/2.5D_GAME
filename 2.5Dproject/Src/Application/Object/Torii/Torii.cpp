@@ -31,6 +31,29 @@ void Torii::Init()
 	// 生成タイマー初期値
 	// 最初はすぐに出現させる（SpawnInterval にすると最初の出現まで10秒待つ）
 	m_spawnTimer = SpawnInterval;
+
+	//===================================================================
+	// HP・破壊演出の初期化
+	//===================================================================
+	m_hp = MaxHP;
+	m_isBroken = false;
+	m_dissolve = 0.0f;
+	m_invincibleTimer = 0;
+
+	//===================================================================
+	// 当たり判定の登録
+	// TypeDamage：プレイヤーの攻撃を受ける判定
+	//===================================================================
+	m_pCollider = std::make_unique<KdCollider>();
+	m_pCollider->RegisterCollisionShape(
+		"ToriiDamageCollision",
+		Math::Vector3(0.0f, 1.0f, 0.0f),	// 中心（鳥居の中央あたり）
+		1.5f,								// 半径（鳥居は大きいので広め）
+		KdCollider::TypeDamage
+	);
+
+	// 揺れ演出初期化
+	m_shakeTimer = 0;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -45,6 +68,40 @@ void Torii::Update()
 	//===================================================================
 	if (SceneManager::Instance().IsCutScene())
 	{
+		return;
+	}
+
+	//===================================================================
+	// 無敵タイマーの更新
+	//===================================================================
+	if (m_invincibleTimer > 0)
+	{
+		m_invincibleTimer--;
+	}
+
+	//===================================================================
+	// 揺れタイマーの更新
+	//===================================================================
+	if (m_shakeTimer > 0)
+	{
+		m_shakeTimer--;
+	}
+
+	//===================================================================
+	// 破壊状態の処理
+	// ディゾルブを進めて、完全に消えたら消滅する
+	//===================================================================
+	if (m_isBroken)
+	{
+		m_dissolve += DissolveSpeed;
+
+		// ワームホールアニメは止めて、ディゾルブだけ進める
+		if (m_dissolve >= 1.0f)
+		{
+			m_isExpired = true;
+		}
+
+		// 破壊中は敵を生成しないのでここでreturn
 		return;
 	}
 
@@ -104,19 +161,55 @@ void Torii::Update()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Torii::DrawLit()
 {
-	// 鳥居モデルの描画
+	//===================================================================
+	// 揺れの計算
+	// 揺れタイマーが残っている間は左右に小刻みにずらす
+	//===================================================================
+	Math::Matrix drawMat = m_mWorld;
+
+	if (m_shakeTimer > 0)
+	{
+		// タイマーの値で揺れ方向を交互に変える（プラス・マイナス）
+		// フレームごとに左右に振れることで揺れて見える
+		float shakeX = (m_shakeTimer % 2 == 0) ? ShakeStrength : -ShakeStrength;
+
+		// 描画用の行列を横にずらす
+		Math::Matrix shakeMat = Math::Matrix::CreateTranslation(
+			Math::Vector3(shakeX, 0.0f, 0.0f)
+		);
+		drawMat = shakeMat * m_mWorld;
+	}
+
+	//===================================================================
+	// 破壊中はディゾルブをかけて鳥居を描画する
+	//===================================================================
+	if (m_isBroken)
+	{
+		float         range = 0.3f;
+		Math::Vector3 color = { 1.0f, 0.3f, 0.3f };
+		KdShaderManager::Instance().m_StandardShader.SetDissolve(
+			m_dissolve, &range, &color
+		);
+	}
+
+	// 鳥居モデルの描画（揺れを反映した行列を使う）
 	KdShaderManager::Instance().m_StandardShader.DrawModel(
-		*m_spModel, m_mWorld
+		*m_spModel, drawMat
 	);
 
+	//===================================================================
 	// ワームホールの描画
-	// 鳥居の中央に配置するため Y 軸にオフセットをかける
-	Math::Matrix wormholeMat = Math::Matrix::CreateTranslation(
-		m_mWorld.Translation() + Math::Vector3(0.0f, 0.8f, 0.0f)
-	);
-	KdShaderManager::Instance().m_StandardShader.DrawPolygon(
-		*m_polygon, wormholeMat
-	);
+	//===================================================================
+	if (!m_isBroken)
+	{
+		// ワームホールは揺らさないので元の m_mWorld 基準で描画する
+		Math::Matrix wormholeMat = Math::Matrix::CreateTranslation(
+			m_mWorld.Translation() + Math::Vector3(0.0f, 0.8f, 0.0f)
+		);
+		KdShaderManager::Instance().m_StandardShader.DrawPolygon(
+			*m_polygon, wormholeMat
+		);
+	}
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -152,4 +245,27 @@ void Torii::SpawnEnemy()
 
 	// 敵が出現したら発光タイマーをセット
 	m_brightTimer = BrightTime;
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// ダメージを受ける関数
+// ・HPを減らして0になったら破壊状態にする
+// ・無敵時間中は処理しない（連続ヒット防止）
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void Torii::TakeDamage(int _damage)
+{
+	if (m_invincibleTimer > 0) { return; }
+	if (m_isBroken) { return; }
+
+	m_hp -= _damage;
+	m_invincibleTimer = InvincibleTime;
+
+	// 被弾時の揺れをセット
+	m_shakeTimer = ShakeTime;
+
+	if (m_hp <= 0)
+	{
+		m_isBroken = true;
+		m_pCollider->SetEnableAll(false);
+	}
 }

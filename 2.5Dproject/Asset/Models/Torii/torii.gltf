@@ -12,18 +12,63 @@
 		{
 			"name":"Scene",
 			"nodes":[
-				0
+				0,
+				1,
+				2,
+				3
 			]
 		}
 	],
 	"nodes":[
 		{
 			"mesh":0,
+			"name":"COL001",
+			"scale":[
+				-0.16284096240997314,
+				-1.0359115600585938,
+				-0.16284096240997314
+			],
+			"translation":[
+				-0.48930415511131287,
+				0.8681405782699585,
+				0
+			]
+		},
+		{
+			"mesh":1,
+			"name":"COL002",
+			"scale":[
+				-0.16284096240997314,
+				-1.0359115600585938,
+				-0.16284096240997314
+			],
+			"translation":[
+				0.5166380405426025,
+				0.8681405782699585,
+				0
+			]
+		},
+		{
+			"mesh":2,
 			"name":"Torii_Model",
 			"scale":[
 				0.3498173952102661,
 				0.3498173952102661,
 				0.3498173952102661
+			]
+		},
+		{
+			"mesh":3,
+			"name":"COL003",
+			"scale":[
+				1.2523788213729858,
+				0.49846717715263367,
+				0.17393352091312408
+			],
+			"translation":[
+				0,
+				1.4108749628067017,
+				0
 			]
 		}
 	],
@@ -50,7 +95,7 @@
 	],
 	"meshes":[
 		{
-			"name":"Cylinder.003",
+			"name":"\u7acb\u65b9\u4f53",
 			"primitives":[
 				{
 					"attributes":{
@@ -58,8 +103,47 @@
 						"NORMAL":1,
 						"TEXCOORD_0":2
 					},
-					"indices":3,
+					"indices":3
+				}
+			]
+		},
+		{
+			"name":"\u7acb\u65b9\u4f53.001",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":4,
+						"NORMAL":5,
+						"TEXCOORD_0":6
+					},
+					"indices":3
+				}
+			]
+		},
+		{
+			"name":"Cylinder.003",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":7,
+						"NORMAL":8,
+						"TEXCOORD_0":9
+					},
+					"indices":10,
 					"material":0
+				}
+			]
+		},
+		{
+			"name":"\u7acb\u65b9\u4f53.002",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":11,
+						"NORMAL":12,
+						"TEXCOORD_0":13
+					},
+					"indices":3
 				}
 			]
 		}
@@ -81,6 +165,68 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
+			"count":24,
+			"max":[
+				1,
+				1,
+				1
+			],
+			"min":[
+				-1,
+				-1,
+				-1
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":1,
+			"componentType":5126,
+			"count":24,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":2,
+			"componentType":5126,
+			"count":24,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":3,
+			"componentType":5123,
+			"count":36,
+			"type":"SCALAR"
+		},
+		{
+			"bufferView":4,
+			"componentType":5126,
+			"count":24,
+			"max":[
+				1,
+				1,
+				1
+			],
+			"min":[
+				-1,
+				-1,
+				-1
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":5,
+			"componentType":5126,
+			"count":24,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":6,
+			"componentType":5126,
+			"count":24,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":7,
+			"componentType":5126,
 			"count":1010,
 			"max":[
 				3.244331121444702,
@@ -95,48 +241,136 @@
 			"type":"VEC3"
 		},
 		{
-			"bufferView":1,
+			"bufferView":8,
 			"componentType":5126,
 			"count":1010,
 			"type":"VEC3"
 		},
 		{
-			"bufferView":2,
+			"bufferView":9,
 			"componentType":5126,
 			"count":1010,
 			"type":"VEC2"
 		},
 		{
-			"bufferView":3,
+			"bufferView":10,
 			"componentType":5123,
 			"count":2988,
 			"type":"SCALAR"
+		},
+		{
+			"bufferView":11,
+			"componentType":5126,
+			"count":24,
+			"max":[
+				1,
+				1,
+				1
+			],
+			"min":[
+				-1,
+				-1,
+				-1
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":12,
+			"componentType":5126,
+			"count":24,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":13,
+			"componentType":5126,
+			"count":24,
+			"type":"VEC2"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":12120,
+			"byteLength":288,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
+			"byteLength":288,
+			"byteOffset":288,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":192,
+			"byteOffset":576,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":72,
+			"byteOffset":768,
+			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":288,
+			"byteOffset":840,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":288,
+			"byteOffset":1128,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":192,
+			"byteOffset":1416,
+			"target":34962
+		},
+		{
+			"buffer":0,
 			"byteLength":12120,
-			"byteOffset":12120,
+			"byteOffset":1608,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":12120,
+			"byteOffset":13728,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":8080,
-			"byteOffset":24240,
+			"byteOffset":25848,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":5976,
-			"byteOffset":32320,
+			"byteOffset":33928,
 			"target":34963
+		},
+		{
+			"buffer":0,
+			"byteLength":288,
+			"byteOffset":39904,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":288,
+			"byteOffset":40192,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":192,
+			"byteOffset":40480,
+			"target":34962
 		}
 	],
 	"samplers":[
@@ -147,7 +381,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":38296,
+			"byteLength":40672,
 			"uri":"Torii.bin"
 		}
 	]
