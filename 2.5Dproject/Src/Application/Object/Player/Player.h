@@ -54,7 +54,6 @@ public:
 	int GetSp()    const { return m_sp; }
 	int GetMaxSp() const { return MaxSP; }
 
-public:
 	// SPを増やす関数
 	// 攻撃が敵にヒットしたときに呼ばれる
 	void AddSp(int _value)
@@ -63,6 +62,18 @@ public:
 
 		// 最大値を超えないように制限
 		if (m_sp > MaxSP) { m_sp = MaxSP; }
+	}
+
+	// SPを消費する関数
+	// SPが足りていれば消費して true、足りなければ false を返す
+	bool UseSp(int _cost)
+	{
+		// SPが足りなければ消費しない
+		if (m_sp < _cost) { return false; }
+
+		// SPを消費
+		m_sp -= _cost;
+		return true;
 	}
 
 private:
@@ -282,4 +293,10 @@ private:
 	// 点滅の間隔（フレーム数）
 	// この間隔で表示・非表示を切り替える
 	static constexpr int BlinkInterval = 5;
+
+	// 必殺技のSP消費量
+	static constexpr int SpecialCostSP = 50;
+
+	// 減速アクションのSP消費量
+	static constexpr int SlowCostSP = 30;
 };

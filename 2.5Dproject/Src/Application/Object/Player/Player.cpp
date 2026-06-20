@@ -10,8 +10,6 @@ void Player::Update()
 	// クールタイムタイマーの更新
 	//===================================================================
 	if (m_dashCoolTimer > 0) { m_dashCoolTimer--; }
-	if (m_specialCoolTimer > 0) { m_specialCoolTimer--; }
-	if (m_slowCoolTimer > 0) { m_slowCoolTimer--; }
 
 	//===================================================================
 	// 被弾無敵タイマーの更新
@@ -329,18 +327,22 @@ void Player::Update()
 	//===================================================================
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		if (!m_isAttacking && !m_isDashing && m_specialCoolTimer <= 0)
+		// 攻撃中・回避中でない かつ SPが足りていれば発動
+		if (!m_isAttacking && !m_isDashing && m_sp >= SpecialCostSP)
 		{
-			m_isSpecial = true;
-			m_specialAnimeCnt = 0.0f;
+			// SPを消費（足りていれば true が返る）
+			if (UseSp(SpecialCostSP))
+			{
+				// 必殺技開始
+				m_isSpecial = true;
+				m_specialAnimeCnt = 0.0f;
 
-			m_specialCoolTimer = SpecialCoolTime;
+				SceneManager::Instance().SetCutScene(true);
 
-			SceneManager::Instance().SetCutScene(true);
-
-			auto effect = std::make_shared<SpecialEffect>();
-			effect->Init();
-			SceneManager::Instance().AddObject(effect);
+				auto effect = std::make_shared<SpecialEffect>();
+				effect->Init();
+				SceneManager::Instance().AddObject(effect);
+			}
 		}
 	}
 
@@ -350,14 +352,18 @@ void Player::Update()
 	//===================================================================
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
-		if (!m_isAttacking && !m_isDashing && !m_isSpecial && m_slowCoolTimer <= 0)
+		// 攻撃中・回避中・必殺技中でない かつ SPが足りていれば発動
+		if (!m_isAttacking && !m_isDashing && !m_isSpecial && m_sp >= SlowCostSP)
 		{
-			m_isSlow = true;
-			m_slowAnimeCnt = 0.0f;
-			m_slowCoolTimer = SlowCoolTime;
+			// SPを消費（足りていれば true が返る）
+			if (UseSp(SlowCostSP))
+			{
+				m_isSlow = true;
+				m_slowAnimeCnt = 0.0f;
 
-			// 発動アニメ中は敵を完全停止
-			SceneManager::Instance().SetCutScene(true);
+				// 発動アニメ中は敵を完全停止
+				SceneManager::Instance().SetCutScene(true);
+			}
 		}
 	}
 
