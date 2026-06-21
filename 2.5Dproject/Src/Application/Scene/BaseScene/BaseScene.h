@@ -28,6 +28,10 @@ public :
 		m_objList.push_back(_obj);
 	}
 
+	// カメラのポインタを取得（HPバーの座標変換などに使う）
+	// 所有権は渡さず参照だけ提供する
+	KdCamera* GetCamera() const { return m_camera.get(); }
+
 protected :
 
 	// 継承先シーンで必要ならオーバーライドする

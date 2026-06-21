@@ -11,6 +11,8 @@
 std::shared_ptr<KdTexture> Enemy::m_spTexWalk = nullptr;
 std::shared_ptr<KdTexture> Enemy::m_spTexHurt = nullptr;
 std::shared_ptr<KdTexture> Enemy::m_spTexAttack = nullptr;
+std::shared_ptr<KdTexture> Enemy::m_spHpBarBg = nullptr;
+std::shared_ptr<KdTexture> Enemy::m_spHpBarFill = nullptr;
 
 void Enemy::Update()
 {
@@ -76,6 +78,9 @@ void Enemy::Update()
 		if (m_deathState == DeathState::KnockBack)
 		{
 			m_deathState = DeathState::Dissolve;
+
+			auto se = KdAudioManager::Instance().Play("Asset/Sounds/消滅.wav", false);
+			if (se) { se->SetVolume(1.0f); }
 			return;
 		}
 
@@ -228,6 +233,14 @@ void Enemy::Init()
 	{
 		m_spTexAttack = std::make_shared<KdTexture>("Asset/Textures/Enemy/MobEnemy/DOWN_SWING.png");
 	}
+	if (m_spHpBarBg == nullptr)
+	{
+		m_spHpBarBg = std::make_shared<KdTexture>("Asset/Textures/UI/bg.png");
+	}
+	if (m_spHpBarFill == nullptr)
+	{
+		m_spHpBarFill = std::make_shared<KdTexture>("Asset/Textures/UI/green.png");
+	}
 
 	m_polygon->SetMaterial(m_spTexWalk);
 	m_polygon->SetPivot(KdSquarePolygon::PivotType::Center_Bottom);
@@ -240,7 +253,7 @@ void Enemy::Init()
 
 	m_pos = {};
 	m_dir = {};
-	m_speed = 0.03f;
+	m_speed = 0.02f;
 
 	m_hp = MaxHP;
 
@@ -387,6 +400,76 @@ void Enemy::DrawLit()
 	KdShaderManager::Instance().m_StandardShader.DrawPolygon(*m_polygon, m_mWorld);
 }
 
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 2D描画
+// 敵の足元にHPバーを表示する（3D座標→2D座標に変換）
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void Enemy::DrawSprite()
+{
+	// 死亡演出中はHPバーを出さない
+	if (m_deathState != DeathState::Alive) { return; }
+
+	// カメラを取得
+	KdCamera* camera = SceneManager::Instance().GetCamera();
+	if (camera == nullptr) { return; }
+
+	//===================================================================
+	// 敵の足元の3D座標を2D座標に変換する
+	//===================================================================
+	Math::Vector3 worldPos = m_pos;
+	worldPos.y += 0.1f;	// 足元より少し上（地面とのちらつき防止）
+
+	Math::Vector3 screenPos = Math::Vector3::Zero;
+	camera->ConvertWorldToScreenDetail(worldPos, screenPos);
+
+	//===================================================================
+	// HPバーのサイズ（プレイヤーより小さく）
+	//===================================================================
+	const int barW = 40;	// 幅（小さめ）
+	const int barH = 10;	// 高さ（小さめ）
+
+	//===================================================================
+	// HP割合を計算
+	//===================================================================
+	float hpRate = (float)m_hp / (float)MaxHP;
+
+	//===================================================================
+	// 枠を先に描画
+	//===================================================================
+	KdShaderManager::Instance().m_spriteShader.DrawTex(
+		m_spHpBarBg.get(),
+		(int)screenPos.x,
+		(int)screenPos.y,
+		barW, barH,
+		nullptr, &kWhiteColor,
+		Math::Vector2(0.5f, 0.5f)
+	);
+
+	//===================================================================
+	// 中身を枠の上に描画（HP割合に応じて右から減らす）
+	//===================================================================
+	float fillW = barW * hpRate;
+	float fillCenterX = (screenPos.x - barW * 0.5f) + fillW * 0.5f;
+
+	Math::Rectangle srcRect;
+	srcRect.x = 0;
+	srcRect.y = 0;
+	srcRect.width = (long)(m_spHpBarFill->GetWidth() * hpRate);
+	srcRect.height = (long)m_spHpBarFill->GetHeight();
+
+	if (fillW > 0.0f)
+	{
+		KdShaderManager::Instance().m_spriteShader.DrawTex(
+			m_spHpBarFill.get(),
+			(int)fillCenterX,
+			(int)screenPos.y,
+			(int)fillW, barH,
+			&srcRect, &kWhiteColor,
+			Math::Vector2(0.5f, 0.5f)
+		);
+	}
+}
+
 void Enemy::GenerateDepthMapFromLight()
 {
 	int   currentFrame = 0;
@@ -461,6 +544,9 @@ void Enemy::TakeDamage(int _damage, const Math::Vector3& _knockBack)
 	{
 		m_deathState = DeathState::KnockBack;
 		m_pCollider->SetEnableAll(false);
+
+		// 討伐数を加算
+		SceneManager::Instance().AddKillCount();
 	}
 }
 

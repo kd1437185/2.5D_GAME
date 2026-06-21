@@ -22,6 +22,8 @@ public:
 	void GenerateDepthMapFromLight() override;
 	void DrawLit()					 override;
 
+	void DrawSprite() override;
+
 	void Init()						 override;
 
 	void SetPos(Math::Vector3 _pos) { m_pos = _pos; }
@@ -178,4 +180,10 @@ private:
 
 	// 攻撃クールタイム（フレーム数）
 	static constexpr int AttackCoolTime = 120;
+
+	//===================================================================
+	// HPバー画像（全Enemyで共有）
+	//===================================================================
+	static std::shared_ptr<KdTexture> m_spHpBarBg;	// 枠
+	static std::shared_ptr<KdTexture> m_spHpBarFill;	// 中身
 };

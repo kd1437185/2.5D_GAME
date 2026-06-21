@@ -51,5 +51,27 @@ private:
 	// 数字スプライトシート画像（0123456789: の11コマ）
 	std::shared_ptr<KdTexture> m_spNumberTex;
 
+	//===================================================================
+	// ゲームの進行状態
+	//===================================================================
+	enum class GameState
+	{
+		Start,		// 開始演出中（「開始」表示）
+		Playing,	// プレイ中
+		Finish,		// 決着演出中（「決着」表示）
+	};
+
+	// 現在の状態
+	GameState m_gameState = GameState::Start;
+
+	// 演出用タイマー（開始・決着の表示時間カウント）
+	int m_stateTimer = 0;
+
+	// 演出表示時間（フレーム数）
+	static constexpr int StateDispTime = 60;	// 約1秒
+
+	// 開始・決着画像
+	std::shared_ptr<KdTexture> m_spStartImg;	// 開始
+	std::shared_ptr<KdTexture> m_spFinishImg;	// 決着
 
 };

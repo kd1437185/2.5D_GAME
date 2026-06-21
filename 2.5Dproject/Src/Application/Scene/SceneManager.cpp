@@ -137,6 +137,11 @@ const std::list<std::shared_ptr<KdGameObject>>& SceneManager::GetObjList()
 	return m_currentScene->GetObjList();
 }
 
+KdCamera* SceneManager::GetCamera()
+{
+	return m_currentScene->GetCamera();
+}
+
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 // 現在のシーンにオブジェクトを追加
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////

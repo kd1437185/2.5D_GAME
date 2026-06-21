@@ -45,6 +45,14 @@ void Bomb::Init()
 
 	m_explodeAnimeCnt = 0.0f;
 	m_isDamageGiven = false;
+
+	//===================================================================
+	// 落下音を鳴らす（爆弾出現＝落下開始のタイミング）
+	//===================================================================
+	auto fallSE = KdAudioManager::Instance().Play(
+		"Asset/Sounds/Motion-Falling_Whistle01-3(Short).wav", false
+	);
+	if (fallSE) { fallSE->SetVolume(FallVolume); }
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -71,6 +79,12 @@ void Bomb::Update()
 			m_pos.y = m_targetPos.y;
 			m_state = State::Explode;
 			m_explodeAnimeCnt = 0.0f;
+
+			// 爆発音を鳴らす
+			auto explodeSE = KdAudioManager::Instance().Play(
+				"Asset/Sounds/Explosion01-1_Short_.wav", false
+			);
+			if (explodeSE) { explodeSE->SetVolume(ExplodeVolume); }
 		}
 		break;
 	}

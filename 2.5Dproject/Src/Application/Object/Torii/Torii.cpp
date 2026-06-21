@@ -54,6 +54,10 @@ void Torii::Init()
 
 	// 揺れ演出初期化
 	m_shakeTimer = 0;
+
+	// 落下関連の初期化
+	m_isFalling = false;
+	m_fallY = 0.0f;
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -68,6 +72,27 @@ void Torii::Update()
 	//===================================================================
 	if (SceneManager::Instance().IsCutScene())
 	{
+		return;
+	}
+
+	//===================================================================
+	// 落下再出現中の処理
+	// 空から落ちてきて、着地したら通常動作を開始する
+	//===================================================================
+	if (m_isFalling)
+	{
+		// 落下高さを減らす
+		m_fallY -= FallSpeed;
+
+		// 着地したら落下終了
+		if (m_fallY <= 0.0f)
+		{
+			m_fallY = 0.0f;
+			m_isFalling = false;
+		}
+
+		// 落下中は敵生成などをせず、ここで return
+		// （描画は DrawLit で m_fallY を反映する）
 		return;
 	}
 
@@ -121,13 +146,14 @@ void Torii::Update()
 	// 鳥居の破壊数に応じて出現数を増やし・間隔を短くする
 	//===================================================================
 
-	// 鳥居の破壊数を取得
+	// 鳥居の破壊数を取得（強化は最大2まで）
 	int breakCount = SceneManager::Instance().GetToriiBreakCount();
+	if (breakCount > 2) { breakCount = 2; }	// 2で頭打ち
 
 	// 破壊数に応じて最大出現数を増やす（破壊1つにつき +5体）
 	int currentMaxSpawn = m_maxSpawnCount + breakCount * 5;
 
-	// 破壊数に応じて出現間隔を短くする（破壊1つにつき -40フレーム・最低30）
+	// 破壊数に応じて出現間隔を短くする
 	int currentInterval = SpawnInterval - breakCount * 40;
 	if (currentInterval < 30) { currentInterval = 30; }
 
@@ -176,6 +202,14 @@ void Torii::DrawLit()
 	//===================================================================
 	Math::Matrix drawMat = m_mWorld;
 
+	if (m_isFalling)
+	{
+		Math::Matrix fallMat = Math::Matrix::CreateTranslation(
+			Math::Vector3(0.0f, m_fallY, 0.0f)
+		);
+		drawMat = fallMat * m_mWorld;
+	}
+
 	if (m_shakeTimer > 0)
 	{
 		// タイマーの値で揺れ方向を交互に変える（プラス・マイナス）
@@ -208,8 +242,9 @@ void Torii::DrawLit()
 
 	//===================================================================
 	// ワームホールの描画
+	// 落下中・破壊中は表示しない（着地後に表示）
 	//===================================================================
-	if (!m_isBroken)
+	if (!m_isBroken && !m_isFalling)
 	{
 		// ワームホールは揺らさないので元の m_mWorld 基準で描画する
 		Math::Matrix wormholeMat = Math::Matrix::CreateTranslation(

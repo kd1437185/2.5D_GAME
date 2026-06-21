@@ -79,6 +79,10 @@ public:
 	// 死亡しているかどうか取得
 	bool IsDead() const { return m_isDead; }
 
+	// 死亡演出が完了したかどうか取得
+	// 死亡アニメが最後まで再生されたら true
+	bool IsDeathAnimeEnd() const { return m_isDeathAnimeEnd; }
+
 private:
 
 	void ChangeAnimation();
@@ -324,4 +328,7 @@ private:
 
 	// 死亡アニメーション用テクスチャ（右向き）
 	std::vector<std::shared_ptr<KdTexture>> m_animTexturesDeathR;
+
+	// 死亡演出完了フラグ
+	bool m_isDeathAnimeEnd = false;
 };

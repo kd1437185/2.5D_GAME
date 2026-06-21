@@ -28,6 +28,14 @@ public:
 	// AttackEffect から呼ばれる
 	void TakeDamage(int _damage);
 
+	// 落下モードで開始する（空から落ちてくる）
+	// 再出現時に呼ぶ
+	void SetFallMode()
+	{
+		m_isFalling = true;
+		m_fallY = FallStartHeight;	// 高い位置から開始
+	}
+
 private:
 
 	// 敵を生成してシーンに追加する
@@ -121,4 +129,20 @@ private:
 
 	// 揺れの強さ（横方向のずれ幅）
 	static constexpr float ShakeStrength = 0.15f;
+
+	//===================================================================
+	// 落下再出現関連
+	//===================================================================
+
+	// 落下中フラグ
+	bool m_isFalling = false;
+
+	// 現在の落下高さ（オフセット）
+	float m_fallY = 0.0f;
+
+	// 落下開始の高さ
+	static constexpr float FallStartHeight = 20.0f;
+
+	// 落下速度
+	static constexpr float FallSpeed = 0.4f;
 };

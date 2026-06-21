@@ -33,6 +33,10 @@ public:
 		m_fadeState = FadeState::FadeOut;
 		m_isFadeOutEnd = false;
 		m_waitTimer = 0.0f;
+
+		// ふすまが閉じる音
+		auto se = KdAudioManager::Instance().Play("Asset/Sounds/和太鼓.wav", false);
+		if (se) { se->SetVolume(1.0f); }
 	}
 
 	// フェードイン開始
@@ -40,6 +44,8 @@ public:
 	{
 		m_fadeState = FadeState::FadeIn;
 		m_isFadeInEnd = false;
+
+		
 	}
 
 	// フェードアウト（待機含む）が完了したか

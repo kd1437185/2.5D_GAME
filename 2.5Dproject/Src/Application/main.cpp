@@ -332,7 +332,7 @@ void Application::Execute()
 			char titleBuf[256];
 			sprintf_s(
 				titleBuf,
-				"GameTitle  FPS:%d",	// タイトル名は後で変更
+				"骸門の侍  FPS:%d",	// タイトル名は後で変更
 				m_fpsController.m_nowfps
 			);
 			SetWindowTextA(m_window.GetWndHandle(), titleBuf);

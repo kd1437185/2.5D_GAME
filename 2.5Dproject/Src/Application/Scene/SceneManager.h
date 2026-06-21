@@ -36,6 +36,9 @@ public:
 	// 現在のシーンのオブジェクトリストを取得
 	const std::list<std::shared_ptr<KdGameObject>>& GetObjList();
 
+	// 現在のシーンのカメラを取得
+	KdCamera* GetCamera();
+
 	// 現在のシーンにオブジェクトを追加
 	void AddObject(const std::shared_ptr<KdGameObject>& _obj);
 
@@ -58,6 +61,14 @@ public:
 	void AddToriiBreakCount() { m_toriiBreakCount++; }
 	void ResetToriiBreakCount() { m_toriiBreakCount = 0; }
 
+	//===================================================================
+	// 敵の討伐数の管理
+	// 敵を倒すたびに加算し、リザルトで使う
+	//===================================================================
+	int  GetKillCount() const { return m_killCount; }
+	void AddKillCount() { m_killCount++; }
+	void ResetKillCount() { m_killCount = 0; }
+
 private:
 
 	// マネージャーの初期化
@@ -75,7 +86,7 @@ private:
 	std::shared_ptr<BaseScene> m_currentScene = nullptr;
 
 	// 現在のシーンの種類を保持している変数
-	SceneType m_currentSceneType = SceneType::Game;
+	SceneType m_currentSceneType = SceneType::Title;
 
 	// 次のシーンの種類を保持している変数
 	SceneType m_nextSceneType = m_currentSceneType;
@@ -103,6 +114,9 @@ private:
 
 	// 鳥居の破壊数（残りの鳥居の強化に使う）
 	int m_toriiBreakCount = 0;
+
+	// 敵の討伐数（リザルトで使う）
+	int m_killCount = 0;
 
 private:
 

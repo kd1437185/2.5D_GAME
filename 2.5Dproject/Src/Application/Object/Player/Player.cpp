@@ -7,6 +7,15 @@
 void Player::Update()
 {
 	//===================================================================
+	// 演出中（開始・決着・必殺技など）は操作を止める
+	// ただし自分の必殺技中は除く（必殺技は自分で SetCutScene するため）
+	//===================================================================
+	if (SceneManager::Instance().IsCutScene() && !m_isSpecial && !m_isSlow)
+	{
+		return;
+	}
+
+	//===================================================================
 	// 死亡中の処理
 	// 死亡アニメーションを再生し、最後のコマで停止する
 	// 他の操作はすべて受け付けない
@@ -22,6 +31,9 @@ void Player::Update()
 		{
 			animeCnt = DeathFrameCount - 1;
 			m_deathAnimeCnt = (float)(DeathFrameCount - 1);
+
+			// 死亡演出完了フラグを立てる
+			m_isDeathAnimeEnd = true;
 		}
 
 		if (m_lastDirType & DirType::Left)
@@ -107,6 +119,9 @@ void Player::Update()
 		if (m_slowEffectTimer <= 0)
 		{
 			SceneManager::Instance().SetEnemySpeedRate(1.0f);
+
+			// 減速効果開始の音を鳴らす
+			KdAudioManager::Instance().Play("Asset/Sounds/Motion-Agility15-3(Reverb).wav", false);
 		}
 	}
 
@@ -203,6 +218,9 @@ void Player::Update()
 
 			// 敵の完全停止を解除（ここから半速になる）
 			SceneManager::Instance().SetCutScene(false);
+
+			// 減速効果開始の音を鳴らす
+			KdAudioManager::Instance().Play("Asset/Sounds/Motion-Agility15-3(Reverb).wav", false);
 		}
 		else
 		{
@@ -350,7 +368,7 @@ void Player::Update()
 			m_animeInfo.count = 0;
 			m_animeInfo.speed = 0.2f;
 
-			KdAudioManager::Instance().Play("Asset/Sounds/Attack.WAV", false);
+			KdAudioManager::Instance().Play("Asset/Sounds/剣で斬る1.WAV", false);
 
 			auto effect = std::make_shared<AttackEffect>();
 			effect->Init();
@@ -412,6 +430,10 @@ void Player::Update()
 
 				SceneManager::Instance().SetCutScene(true);
 
+				// 剣を抜く音を鳴らす
+				auto se = KdAudioManager::Instance().Play("Asset/Sounds/高速斬撃2.wav", false);
+				if (se) { se->SetVolume(1.0f); }
+
 				auto effect = std::make_shared<SpecialEffect>();
 				effect->Init();
 				SceneManager::Instance().AddObject(effect);
@@ -436,6 +458,9 @@ void Player::Update()
 
 				// 発動アニメ中は敵を完全停止
 				SceneManager::Instance().SetCutScene(true);
+
+				// 剣を抜く音を鳴らす
+				KdAudioManager::Instance().Play("Asset/Sounds/剣を抜く.wav", false);
 			}
 		}
 	}
@@ -912,9 +937,9 @@ void Player::Init()
 	m_animeInfo.speed = 0.2f;
 
 	// 座標・移動速度
-	m_pos = {};
+	m_pos = { 0.0f, -0.25f, 0.0f };
 	m_dir = {};
-	m_speed = 0.1f;
+	m_speed = 0.08f;
 
 	m_gravity = 0.0f;
 	m_mWorld = Math::Matrix::Identity;
@@ -1024,6 +1049,7 @@ void Player::Init()
 	// 死亡関連初期化
 	m_isDead = false;
 	m_deathAnimeCnt = 0.0f;
+	m_isDeathAnimeEnd = false;
 
 }
 
