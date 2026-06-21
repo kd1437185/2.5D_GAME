@@ -34,6 +34,10 @@ protected :
 	virtual void Event();
 	virtual void Init();
 
+	// シーン独自の2D描画（継承先でオーバーライド）
+	// オブジェクトの2D描画の後に呼ばれる
+	virtual void DrawSpriteScene() {}
+
 	std::unique_ptr<KdCamera> m_camera = nullptr;
 
 	// 全オブジェクトのアドレスをリストで管理

@@ -11,6 +11,7 @@ public:
 	{
 		Title,
 		Game,
+		Result,
 	};
 
 	void PreUpdate();
@@ -49,6 +50,13 @@ public:
 	float GetEnemySpeedRate() const { return m_enemySpeedRate; }
 	void  SetEnemySpeedRate(float _rate) { m_enemySpeedRate = _rate; }
 
+	//===================================================================
+	// 鳥居の破壊数の管理
+	// 鳥居が壊れるたびに加算し、残りの鳥居が強化される
+	//===================================================================
+	int  GetToriiBreakCount() const { return m_toriiBreakCount; }
+	void AddToriiBreakCount() { m_toriiBreakCount++; }
+	void ResetToriiBreakCount() { m_toriiBreakCount = 0; }
 
 private:
 
@@ -92,6 +100,9 @@ private:
 
 	// 敵の速度倍率（1.0：通常）
 	float m_enemySpeedRate = 1.0f;
+
+	// 鳥居の破壊数（残りの鳥居の強化に使う）
+	int m_toriiBreakCount = 0;
 
 private:
 

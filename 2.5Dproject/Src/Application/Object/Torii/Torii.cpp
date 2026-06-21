@@ -118,9 +118,18 @@ void Torii::Update()
 
 	//===================================================================
 	// 敵の生成
-	// 現在シーンに存在するEnemyの数を数えて
-	// 最大数に達していない場合のみ生成タイマーを進める
+	// 鳥居の破壊数に応じて出現数を増やし・間隔を短くする
 	//===================================================================
+
+	// 鳥居の破壊数を取得
+	int breakCount = SceneManager::Instance().GetToriiBreakCount();
+
+	// 破壊数に応じて最大出現数を増やす（破壊1つにつき +5体）
+	int currentMaxSpawn = m_maxSpawnCount + breakCount * 5;
+
+	// 破壊数に応じて出現間隔を短くする（破壊1つにつき -40フレーム・最低30）
+	int currentInterval = SpawnInterval - breakCount * 40;
+	if (currentInterval < 30) { currentInterval = 30; }
 
 	// 現在シーンに存在するEnemyの数を数える
 	int enemyCount = 0;
@@ -133,12 +142,12 @@ void Torii::Update()
 	}
 
 	// 最大数に達していなければタイマーを進める
-	if (enemyCount < m_maxSpawnCount)
+	if (enemyCount < currentMaxSpawn)
 	{
 		m_spawnTimer++;
 
 		// 生成間隔に達したら敵を生成
-		if (m_spawnTimer >= SpawnInterval)
+		if (m_spawnTimer >= currentInterval)
 		{
 			m_spawnTimer = 0;
 			SpawnEnemy();
@@ -267,5 +276,8 @@ void Torii::TakeDamage(int _damage)
 	{
 		m_isBroken = true;
 		m_pCollider->SetEnableAll(false);
+
+		// 鳥居破壊数を加算（残りの鳥居が強化される）
+		SceneManager::Instance().AddToriiBreakCount();
 	}
 }

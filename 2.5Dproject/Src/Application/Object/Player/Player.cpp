@@ -7,6 +7,79 @@
 void Player::Update()
 {
 	//===================================================================
+	// 死亡中の処理
+	// 死亡アニメーションを再生し、最後のコマで停止する
+	// 他の操作はすべて受け付けない
+	//===================================================================
+	if (m_isDead)
+	{
+		// 死亡アニメーションを進める
+		m_deathAnimeCnt += DeathAnimeSpeed;
+
+		int animeCnt = (int)m_deathAnimeCnt;
+
+		if (animeCnt >= DeathFrameCount)
+		{
+			animeCnt = DeathFrameCount - 1;
+			m_deathAnimeCnt = (float)(DeathFrameCount - 1);
+		}
+
+		if (m_lastDirType & DirType::Left)
+		{
+			m_polygon.SetMaterial(m_animTexturesDeathL[animeCnt]);
+		}
+		else
+		{
+			m_polygon.SetMaterial(m_animTexturesDeathR[animeCnt]);
+		}
+
+		// 重力処理
+		m_gravity += 0.005f;
+		m_pos.y -= m_gravity;
+
+		//===================================================================
+		// 地面との当たり判定（レイ判定）
+		// 死亡中も地面を貫通しないようにする
+		//===================================================================
+		KdCollider::RayInfo rayInfo;
+		rayInfo.m_pos = m_pos;
+
+		static const float enableStepHigh = 0.2f;
+		rayInfo.m_pos.y += enableStepHigh;
+		rayInfo.m_dir = { 0.0f, -1.0f, 0.0f };
+		rayInfo.m_range = enableStepHigh + m_gravity;
+		rayInfo.m_type = KdCollider::TypeGround;
+
+		std::list<KdCollider::CollisionResult> retRayList;
+		for (auto& obj : SceneManager::Instance().GetObjList())
+		{
+			obj->Intersects(rayInfo, &retRayList);
+		}
+
+		bool  hit = false;
+		float maxOverLap = 0;
+		Math::Vector3 groundPos = {};
+
+		for (auto& ret : retRayList)
+		{
+			if (maxOverLap < ret.m_overlapDistance)
+			{
+				maxOverLap = ret.m_overlapDistance;
+				groundPos = ret.m_hitPos;
+				hit = true;
+			}
+		}
+
+		if (hit)
+		{
+			m_pos = groundPos;
+			m_gravity = 0.0f;
+		}
+
+		return;	// 死亡中は以降の処理をすべてスキップ
+	}
+
+	//===================================================================
 	// クールタイムタイマーの更新
 	//===================================================================
 	if (m_dashCoolTimer > 0) { m_dashCoolTimer--; }
@@ -646,7 +719,7 @@ void Player::DrawSprite()
 	//===================================================================
 	// バーの基本サイズ
 	//===================================================================
-	const float barW = 512.0f;	// バーの幅
+	const float barW = 300.0f;	// バーの幅
 	const float barH = 48.0f;	// バーの高さ
 
 	//===================================================================
@@ -932,6 +1005,26 @@ void Player::Init()
 	// 被弾無敵初期化
 	m_damageInvincibleTimer = 0;
 
+	// 死亡・左向きテクスチャ（000〜008）
+	for (int i = 0; i <= 8; ++i)
+	{
+		char fileName[256];
+		sprintf_s(fileName, "Asset/Textures/Player/DeathL/frame_%03d.png", i);
+		m_animTexturesDeathL.push_back(std::make_shared<KdTexture>(fileName));
+	}
+
+	// 死亡・右向きテクスチャ（000〜008）
+	for (int i = 0; i <= 8; ++i)
+	{
+		char fileName[256];
+		sprintf_s(fileName, "Asset/Textures/Player/DeathR/frame_%03d.png", i);
+		m_animTexturesDeathR.push_back(std::make_shared<KdTexture>(fileName));
+	}
+
+	// 死亡関連初期化
+	m_isDead = false;
+	m_deathAnimeCnt = 0.0f;
+
 }
 
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
@@ -948,6 +1041,9 @@ void Player::ChangeAnimation()
 // ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
 void Player::TakeDamage(int _damage)
 {
+	// 既に死亡している場合は何もしない
+	if (m_isDead) { return; }
+
 	// 回避中は無敵なのでダメージを受けない
 	if (m_isDashInvincible) { return; }
 
@@ -957,10 +1053,18 @@ void Player::TakeDamage(int _damage)
 	// HPを減らす
 	m_hp -= _damage;
 
-	// HPが0以下にならないように制限
-	if (m_hp < 0) { m_hp = 0; }
+	// HPが0以下になったら死亡
+	if (m_hp <= 0)
+	{
+		m_hp = 0;
 
-	// 被弾無敵をセット（この間点滅して無敵になる）
+		// 死亡状態に移行
+		m_isDead = true;
+		m_deathAnimeCnt = 0.0f;
+		return;
+	}
+
+	// 被弾無敵をセット
 	m_damageInvincibleTimer = DamageInvincibleTime;
 
 	KdDebugGUI::Instance().AddLog("Player TakeDamage:%d HP:%d", _damage, m_hp);

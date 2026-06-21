@@ -100,6 +100,12 @@
     <Filter Include="Src\Application\Object\Torii">
       <UniqueIdentifier>{80a81598-974e-493e-a921-c93924b0bd6c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Src\Application\Object\Bomb">
+      <UniqueIdentifier>{f420cd3a-7e09-42fa-a22a-819ea620a2a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Src\Application\Scene\ResultScene">
+      <UniqueIdentifier>{9552df1b-da51-4c0d-a0ef-7b103061a199}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Pch.h">
@@ -300,6 +306,15 @@
     <ClInclude Include="Src\Application\Object\Effect\SpecialEffect.h">
       <Filter>Src\Application\Object\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Application\Object\Bomb\Bomb.h">
+      <Filter>Src\Application\Object\Bomb</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Object\Bomb\BombManager.h">
+      <Filter>Src\Application\Object\Bomb</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Application\Scene\ResultScene\ResultScene.h">
+      <Filter>Src\Application\Scene\ResultScene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Pch.cpp">
@@ -469,6 +484,15 @@
     </ClCompile>
     <ClCompile Include="Src\Application\Object\Effect\SpecialEffect.cpp">
       <Filter>Src\Application\Object\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Object\Bomb\Bomb.cpp">
+      <Filter>Src\Application\Object\Bomb</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Object\Bomb\BombManager.cpp">
+      <Filter>Src\Application\Object\Bomb</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Application\Scene\ResultScene\ResultScene.cpp">
+      <Filter>Src\Application\Scene\ResultScene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

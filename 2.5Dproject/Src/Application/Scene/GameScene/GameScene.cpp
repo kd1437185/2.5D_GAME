@@ -5,6 +5,7 @@
 #include "../../Object/Player/Player.h"
 #include "../FadeManager/FadeManager.h"
 #include "../../Object/Torii/Torii.h"
+#include "../../Object/Bomb/BombManager.h"
 
 void GameScene::Event()
 {
@@ -15,11 +16,44 @@ void GameScene::Event()
 	KdDebugGUI::Instance().ClearLog();
 
 	//===================================================================
+	// タイマーの更新
+	// 毎フレーム減少し、0になったらゲームクリア（リザルトへ）
+	//===================================================================
+	if (m_timer > 0)
+	{
+		m_timer--;
+
+		// 時間切れ＝ゲームクリア
+		if (m_timer <= 0)
+		{
+			m_timer = 0;
+
+			// BGM停止
+			if (m_bgm) { m_bgm->Stop(); }
+
+			// 鳥居破壊数リセット
+			SceneManager::Instance().ResetToriiBreakCount();
+
+			// リザルトシーンへ遷移
+			SceneManager::Instance().SetNextScene(SceneManager::SceneType::Result);
+		}
+	}
+
+	//===================================================================
 	// デバッグ用：エンターキーでタイトルシーンに遷移
 	//===================================================================
 	if (GetAsyncKeyState(VK_RETURN) & 0x8000)
 	{
-		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Title);
+		// タイトルへ戻る前にBGMを停止
+		if (m_bgm)
+		{
+			m_bgm->Stop();
+		}
+
+		// 鳥居破壊数をリセット
+		SceneManager::Instance().ResetToriiBreakCount();
+
+		SceneManager::Instance().SetNextScene(SceneManager::SceneType::Result);
 	}
 
 	//===================================================================
@@ -58,8 +92,8 @@ void GameScene::Event()
 	// 寄り具合に応じてカメラの距離を変える
 	// 通常時のオフセット → 寄り時のオフセット へ補間する
 	//===================================================================
-	Math::Vector3 normalOffset = Math::Vector3(0.0f, 4.0f, -5.0f);	// 通常
-	Math::Vector3 zoomOffset = Math::Vector3(0.0f, 2.0f, -3.0f);	// 寄り
+	Math::Vector3 normalOffset = Math::Vector3(0.0f, 3.0f, -4.0f);	// 通常
+	Math::Vector3 zoomOffset = Math::Vector3(0.0f, 2.0f, -2.0f);	// 寄り
 
 	// 補間したオフセットを計算
 	Math::Vector3 camOffset = Math::Vector3::Lerp(
@@ -71,7 +105,7 @@ void GameScene::Event()
 
 	// カメラの回転行列を作成（少し下を向かせる）
 	Math::Matrix rotMat = Math::Matrix::CreateRotationX(
-		DirectX::XMConvertToRadians(30)
+		DirectX::XMConvertToRadians(35)
 	);
 
 	// 行列を合成（回転 * 座標）
@@ -136,6 +170,14 @@ void GameScene::Init()
 	m_objList.push_back(torii);
 
 	//===================================================================
+	// 爆弾管理を配置（一定間隔で爆弾を降らせる）
+	//===================================================================
+	std::shared_ptr<BombManager> bombManager;
+	bombManager = std::make_shared<BombManager>();
+	bombManager->Init();
+	m_objList.push_back(bombManager);
+
+	//===================================================================
 	// 環境光の設定
 	// 画面全体の明るさを調整する（デフォルトは0.3）
 	// 値を上げると暗い部分が明るくなる
@@ -153,4 +195,97 @@ void GameScene::Init()
 		Math::Vector3(3.0f, 3.0f, 3.0f)		// 光の色（明るさ・デフォルトは2.25）
 	);
 
+	//===================================================================
+	// BGM再生（ループ）
+	//===================================================================
+	m_bgm = KdAudioManager::Instance().Play("Asset/Sounds/Samurai_Strain.wav", true);
+	if (m_bgm)
+	{
+		m_bgm->SetVolume(0.2f);
+	}
+
+	//===================================================================
+	// タイマー初期化（2分 = 7200フレーム）
+	//===================================================================
+	m_timer = 7200;
+
+	// 数字画像のロード
+	m_spNumberTex = std::make_shared<KdTexture>("Asset/Textures/UI/number.png");
+
+}
+
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+// 2D描画
+// タイマーを画面上中央に数字画像で表示する
+// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// ///// /////
+void GameScene::DrawSpriteScene()
+{
+	if (!m_spNumberTex) { return; }
+
+	//===================================================================
+	// 残りフレーム数を分:秒に変換する
+	//===================================================================
+	int totalSeconds = m_timer / 60;	// フレーム→秒
+	int minutes = totalSeconds / 60;	// 分
+	int seconds = totalSeconds % 60;	// 秒
+
+	//===================================================================
+	// 表示する数字を並べる
+	// 形式：M:SS（例 2:00, 1:59, 0:05）
+	// スプライトシートのコマ番号：0〜9はそのまま、コロンは10
+	//===================================================================
+
+	// 表示するコマ番号の配列を作る
+	// 分1桁・コロン・秒2桁 の4文字
+	int digits[4];
+	digits[0] = minutes;			// 分（1桁）
+	digits[1] = 10;					// コロン（コマ10）
+	digits[2] = seconds / 10;		// 秒の十の位
+	digits[3] = seconds % 10;		// 秒の一の位
+
+	//===================================================================
+	// 数字を1コマずつ描画する
+	//===================================================================
+
+	// 1コマのサイズ（スプライトシートの幅÷11）
+	int numW = m_spNumberTex->GetWidth() / 11;
+	int numH = m_spNumberTex->GetHeight();
+
+	// 表示サイズ（拡大率）
+	float scale = 1.0f;
+	int   drawW = (int)(numW * scale);
+	int   drawH = (int)(numH * scale);
+
+	// 4文字分の合計幅
+	int totalW = drawW * 4;
+
+	// 画面上中央に配置
+	// 中央原点なので、左端 = -合計幅/2、上 = 300あたり
+	int startX = -totalW / 2;
+	int posY = 300;
+
+	// 1文字ずつ描画
+	for (int i = 0; i < 4; ++i)
+	{
+		// このコマのUV範囲を切り取る
+		Math::Rectangle srcRect;
+		srcRect.x = digits[i] * numW;
+		srcRect.y = 0;
+		srcRect.width = numW;
+		srcRect.height = numH;
+
+		// X座標（左から順に並べる・中心基準なので半分ずらす）
+		int posX = startX + drawW * i + drawW / 2;
+
+		KdShaderManager::Instance().m_spriteShader.DrawTex(
+			m_spNumberTex.get(),
+			posX,
+			posY,
+			drawW,
+			drawH,
+			&srcRect,
+			&kWhiteColor,
+			Math::Vector2(0.5f, 0.5f)
+		);
+	}
 }

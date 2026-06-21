@@ -125,10 +125,14 @@ void BaseScene::DrawSprite()
 	// 2Dの描画はこの間で行う
 	KdShaderManager::Instance().m_spriteShader.Begin();
 	{
+		// 各オブジェクトの2D描画
 		for (auto& obj : m_objList)
 		{
 			obj->DrawSprite();
 		}
+
+		// シーン独自の2D描画（タイマーなど）
+		DrawSpriteScene();
 	}
 	KdShaderManager::Instance().m_spriteShader.End();
 }

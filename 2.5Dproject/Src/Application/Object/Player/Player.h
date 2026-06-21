@@ -76,6 +76,9 @@ public:
 		return true;
 	}
 
+	// 死亡しているかどうか取得
+	bool IsDead() const { return m_isDead; }
+
 private:
 
 	void ChangeAnimation();
@@ -299,4 +302,26 @@ private:
 
 	// 減速アクションのSP消費量
 	static constexpr int SlowCostSP = 30;
+
+	//===================================================================
+	// 死亡演出関連
+	//===================================================================
+
+	// 死亡中フラグ
+	bool m_isDead = false;
+
+	// 死亡アニメーションカウント
+	float m_deathAnimeCnt = 0.0f;
+
+	// 死亡アニメーションの総コマ数（9コマ）
+	static constexpr int DeathFrameCount = 9;
+
+	// 死亡アニメーションの速度
+	static constexpr float DeathAnimeSpeed = 0.2f;
+
+	// 死亡アニメーション用テクスチャ（左向き）
+	std::vector<std::shared_ptr<KdTexture>> m_animTexturesDeathL;
+
+	// 死亡アニメーション用テクスチャ（右向き）
+	std::vector<std::shared_ptr<KdTexture>> m_animTexturesDeathR;
 };
